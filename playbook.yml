@@ -208,3 +208,11 @@
         state: present
         regexp: '^source <(kubectl completion zsh)'
         line: 'source <(kubectl completion zsh)'
+    - name: setup-aws-auto-completion-in-zsh
+      become: yes
+      become_user: vagrant
+      lineinfile:
+        path: ~/.zshrc
+        state: present
+        regexp: '^source /home/vagrant/.local/bin/aws_zsh_completer.sh'
+        line: 'source /home/vagrant/.local/bin/aws_zsh_completer.sh'
