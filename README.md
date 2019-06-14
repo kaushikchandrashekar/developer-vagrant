@@ -9,6 +9,12 @@
 - run `vagrant ssh`
 
 
+## environment-variables.sh
+  - runs every time we launch a new vagrant shell using `vagrant ssh`
+  - consists of keys, password or any other information that is developer or environment specific
+  - should not be checked in to the repository
+
+
 Note: If fonts are not visible properly on iTerm, then font needed for powerline is missing.
 
 Steps to install powerline font
