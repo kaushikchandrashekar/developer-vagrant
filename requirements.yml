@@ -2,7 +2,7 @@
   version: 2.5.2
 - src: andrewrothstein.kubectl
   version: v1.1.20
-- src: andrewrothstein.terraform
-  version: v2.2.18
+- src: diodonfrost.terraform
+  version: 1.0.2
 - src: andrewrothstein.vault
   version: v1.2.17

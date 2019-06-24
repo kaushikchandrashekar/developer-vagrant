@@ -65,27 +65,31 @@
     - name: install-vault
       import_role:
         name: andrewrothstein.vault
-    - name: install-terraform-0-11-11
-      become: user
-      become_user: vagrant
-      import_role:
-        name: andrewrothstein.terraform
-      vars:
-        terraform_ver: '0.11.11'
-        terraform_force_install: false
-    - name: create-symlink-to-terraform-0-11-11
+    - name: create-terraform-install-dirs
       file:
-        src: /usr/local/bin/terraform_0.11.11/terraform
-        dest: /usr/local/bin/terraform-0.11.11
-        state: link
-    - name: install-terraform-0-12-0
-      become: user
-      become_user: vagrant
-      import_role:
-        name: andrewrothstein.terraform
+        path: "{{ item }}"
+        state: directory
+      loop:
+        - '/usr/local/bin/terraform_0.11.13'
+        - '/usr/local/bin/terraform_0.12.0'
+    - name: install-terraform
+      include_role:
+        name: diodonfrost.terraform
       vars:
-        terraform_ver: '0.12.0'
-        terraform_force_install: true
+        terraform_version: "{{ item.version }}"
+        terraform_path: "{{ item.path }}"
+      loop:
+        - { version: '0.11.13', path: '/usr/local/bin/terraform_0.11.13' }
+        - { version: '0.12.0', path: '/usr/local/bin/terraform_0.12.0' }
+    - name: alternatives-for-terraform
+      alternatives:
+        name: terraform
+        link: /usr/local/bin/terraform
+        path: "{{ item.path }}"
+        priority: "{{ item.priority }}"
+      loop:
+        - { path: '/usr/local/bin/terraform_0.11.13/terraform', priority: 1 }
+        - { path: '/usr/local/bin/terraform_0.12.0/terraform', priority: 2 }
     - name: set-java-home
       lineinfile:
         path: /etc/environment
