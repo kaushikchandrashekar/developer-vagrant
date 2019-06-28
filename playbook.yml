@@ -9,6 +9,10 @@
       apt:
         name: python3-pip
         state: present
+    - name: install-ntp
+      apt:
+        name: ntp
+        state: present
     - name: install-jq
       apt:
         name: jq
