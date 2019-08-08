@@ -76,6 +76,7 @@
       loop:
         - '/usr/local/bin/terraform_0.11.13'
         - '/usr/local/bin/terraform_0.12.0'
+        - '/usr/local/bin/terraform_0.12.5'
     - name: install-terraform
       include_role:
         name: diodonfrost.terraform
@@ -85,6 +86,7 @@
       loop:
         - { version: '0.11.13', path: '/usr/local/bin/terraform_0.11.13' }
         - { version: '0.12.0', path: '/usr/local/bin/terraform_0.12.0' }
+        - { version: '0.12.5', path: '/usr/local/bin/terraform_0.12.5' }
     - name: alternatives-for-terraform
       alternatives:
         name: terraform
@@ -94,6 +96,7 @@
       loop:
         - { path: '/usr/local/bin/terraform_0.11.13/terraform', priority: 1 }
         - { path: '/usr/local/bin/terraform_0.12.0/terraform', priority: 2 }
+        - { path: '/usr/local/bin/terraform_0.12.5/terraform', priority: 3 }
     - name: set-java-home
       lineinfile:
         path: /etc/environment

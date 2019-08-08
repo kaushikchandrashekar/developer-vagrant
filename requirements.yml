@@ -5,4 +5,4 @@
 - src: diodonfrost.terraform
   version: 1.0.2
 - src: andrewrothstein.vault
-  version: v1.2.17
+  version: v1.2.22
