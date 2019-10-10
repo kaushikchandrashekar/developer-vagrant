@@ -9,6 +9,8 @@ Vagrant.configure("2") do |config|
   end
   config.vm.synced_folder "./..", "/home/vagrant/workspace"
   config.vm.synced_folder "./scripts", "/home/vagrant/scripts"
+  config.vm.synced_folder "./.terraform.d", "/home/vagrant/.terraform.d"
+  config.vm.synced_folder "~/.ssh", "/home/vagrant/.ssh-keys"
   config.vm.network "forwarded_port", guest: 8080, host: 8080
   config.vm.network "forwarded_port", guest: 8200, host: 8200
   config.vm.provision "ansible_local" do |ansible|
