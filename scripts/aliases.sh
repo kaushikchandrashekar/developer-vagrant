@@ -8,10 +8,13 @@ alias whats-my-ip='curl ifconfig.me'
 
 alias unset-aws-dynamic-creds='unset AWS_ACCESS_KEY_ID; unset AWS_SECRET_ACCESS_KEY; unset AWS_SESSION_TOKEN'
 
+alias sync-time='sudo service ntp stop; sleep 10; sudo service ntp start; sleep 10; sudo service ntp status'
+
 alias use-terraform-0-11-13='sudo update-alternatives --set terraform /usr/local/bin/terraform_0.11.13/terraform'
 alias use-terraform-0-12-0='sudo update-alternatives --set terraform /usr/local/bin/terraform_0.12.0/terraform'
 alias use-terraform-0-12-5='sudo update-alternatives --set terraform /usr/local/bin/terraform_0.12.5/terraform'
 alias use-terraform-0-12-9='sudo update-alternatives --set terraform /usr/local/bin/terraform_0.12.9/terraform'
+alias use-terraform-0-12-12='sudo update-alternatives --set terraform /usr/local/bin/terraform_0.12.12/terraform'
 
 alias tf='terraform'
 

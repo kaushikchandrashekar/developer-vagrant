@@ -69,6 +69,9 @@
     - name: install-vault
       import_role:
         name: andrewrothstein.vault
+    - name: install-azure-cli
+      import_role:
+        name: huxoll.azure-cli
     - name: create-terraform-install-dirs
       file:
         path: "{{ item }}"
@@ -78,6 +81,7 @@
         - '/usr/local/bin/terraform_0.12.0'
         - '/usr/local/bin/terraform_0.12.5'
         - '/usr/local/bin/terraform_0.12.9'
+        - '/usr/local/bin/terraform_0.12.12'
     - name: install-terraform
       include_role:
         name: diodonfrost.terraform
@@ -89,6 +93,7 @@
         - { version: '0.12.0', path: '/usr/local/bin/terraform_0.12.0' }
         - { version: '0.12.5', path: '/usr/local/bin/terraform_0.12.5' }
         - { version: '0.12.9', path: '/usr/local/bin/terraform_0.12.9' }
+        - { version: '0.12.12', path: '/usr/local/bin/terraform_0.12.12' }
     - name: alternatives-for-terraform
       alternatives:
         name: terraform
@@ -100,6 +105,7 @@
         - { path: '/usr/local/bin/terraform_0.12.0/terraform', priority: 2 }
         - { path: '/usr/local/bin/terraform_0.12.5/terraform', priority: 3 }
         - { path: '/usr/local/bin/terraform_0.12.9/terraform', priority: 4 }
+        - { path: '/usr/local/bin/terraform_0.12.12/terraform', priority: 5 }
     - name: set-java-home
       lineinfile:
         path: /etc/environment
