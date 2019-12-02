@@ -1,6 +1,6 @@
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu/xenial64"
-  config.vm.box_version = "20190521.0.0"
+  config.vm.box_version = "20191126.1.0"
   config.disksize.size = '30GB'
   config.vm.provider "virtualbox" do |v|
     #v.memory = 4096
