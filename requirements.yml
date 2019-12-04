@@ -1,10 +1,14 @@
 - src: geerlingguy.docker
-  version: 2.5.2
+  version: 2.5.3
 - src: andrewrothstein.kubectl
-  version: v1.1.20
+  version: v1.1.30
+- src: andrewrothstein.kops
+  version: v1.1.11
+- src: andrewrothstein.minikube
+  version: v1.5.6
 - src: diodonfrost.terraform
   version: 1.0.2
 - src: andrewrothstein.vault
-  version: v1.2.22
+  version: v1.2.27
 - src: huxoll.azure-cli
   version: 1.1.1

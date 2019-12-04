@@ -1,4 +1,36 @@
 ---
+- hosts: none
+  become: true
+  tasks:
+    - name: install-maven
+      apt:
+        name: maven
+        state: present
+    - name: create-terraform-install-dirs
+      file:
+        path: "{{ item }}"
+        state: directory
+      loop:
+        - '/usr/local/bin/terraform_0.12.16'
+    - name: install-terraform
+      include_role:
+        name: diodonfrost.terraform
+      vars:
+        terraform_version: "{{ item.version }}"
+        terraform_path: "{{ item.path }}"
+      loop:
+        - { version: '0.12.16', path: '/usr/local/bin/terraform_0.12.16' }
+    - name: alternatives-for-terraform
+      alternatives:
+        name: terraform
+        link: /usr/local/bin/terraform
+        path: "{{ item.path }}"
+        priority: "{{ item.priority }}"
+      loop:
+        - { path: '/usr/local/bin/terraform_0.12.16/terraform', priority: 1 }
+    - name: install-azure-cli
+      import_role:
+        name: huxoll.azure-cli
 - hosts: all
   become: true
   tasks:
@@ -36,10 +68,6 @@
       loop:
         - openjdk-8-jre
         - openjdk-8-jdk
-    - name: install-maven
-      apt:
-        name: maven
-        state: present
     - name: install-zsh
       apt:
         name: zsh
@@ -66,34 +94,14 @@
       become_user: vagrant
       import_role:
         name: andrewrothstein.kubectl
+    - name: install-kops
+      import_role:
+        name: andrewrothstein.kops
     - name: install-vault
       import_role:
         name: andrewrothstein.vault
-    - name: install-azure-cli
-      import_role:
-        name: huxoll.azure-cli
-    - name: create-terraform-install-dirs
-      file:
-        path: "{{ item }}"
-        state: directory
-      loop:
-        - '/usr/local/bin/terraform_0.12.16'
-    - name: install-terraform
-      include_role:
-        name: diodonfrost.terraform
-      vars:
-        terraform_version: "{{ item.version }}"
-        terraform_path: "{{ item.path }}"
-      loop:
-        - { version: '0.12.16', path: '/usr/local/bin/terraform_0.12.16' }
-    - name: alternatives-for-terraform
-      alternatives:
-        name: terraform
-        link: /usr/local/bin/terraform
-        path: "{{ item.path }}"
-        priority: "{{ item.priority }}"
-      loop:
-        - { path: '/usr/local/bin/terraform_0.12.16/terraform', priority: 1 }
+    - name: install-tfswitch
+      shell: tfswitch --version || curl -L https://raw.githubusercontent.com/warrensbox/terraform-switcher/release/install.sh | bash
     - name: set-java-home
       lineinfile:
         path: /etc/environment

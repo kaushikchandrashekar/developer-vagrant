@@ -10,11 +10,9 @@ alias unset-aws-dynamic-creds='unset AWS_ACCESS_KEY_ID; unset AWS_SECRET_ACCESS_
 
 alias sync-time='sudo service ntp stop; sleep 10; sudo service ntp start; sleep 10; sudo service ntp status'
 
-alias use-terraform-0-11-13='sudo update-alternatives --set terraform /usr/local/bin/terraform_0.11.13/terraform'
-alias use-terraform-0-12-0='sudo update-alternatives --set terraform /usr/local/bin/terraform_0.12.0/terraform'
-alias use-terraform-0-12-5='sudo update-alternatives --set terraform /usr/local/bin/terraform_0.12.5/terraform'
-alias use-terraform-0-12-9='sudo update-alternatives --set terraform /usr/local/bin/terraform_0.12.9/terraform'
-alias use-terraform-0-12-12='sudo update-alternatives --set terraform /usr/local/bin/terraform_0.12.12/terraform'
+alias local-server='python3 -m http.server'
+
+alias tf-switch='tfswitch -b /home/vagrant/.local/bin/terraform -l'
 
 alias tf='terraform'
 
@@ -30,13 +28,3 @@ alias tf-state-show='tf state show'
 alias tf-state-rm='tf state rm'
 alias tf-import='tf import'
 alias tf-fmt='tf fmt'
-
-alias tf-init-dev='tf-init -backend-config=environments/dev/backend.config -reconfigure'
-alias tf-init-qa='tf-init -backend-config=environments/qa/backend.config -reconfigure'
-alias tf-init-demo='tf-init -backend-config=environments/demo/backend.config -reconfigure'
-alias tf-init-prod='tf-init -backend-config=environments/prod/backend.config -reconfigure'
-
-alias tf-plan-dev='tf-plan -var-file=$(find environments/dev -type f -name "*.tfvars" | head -n 1)'
-alias tf-plan-qa='tf-plan -var-file=$(find environments/qa -type f -name "*.tfvars" | head -n 1)'
-alias tf-plan-demo='tf-plan -var-file=$(find environments/demo -type f -name "*.tfvars" | head -n 1)'
-alias tf-plan-prod='tf-plan -var-file=$(find environments/prod -type f -name "*.tfvars" | head -n 1)'
