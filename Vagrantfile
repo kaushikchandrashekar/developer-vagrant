@@ -1,10 +1,8 @@
 Vagrant.configure("2") do |config|
-  config.vm.box = "ubuntu/xenial64"
-  config.vm.box_version = "20191126.1.0"
+  config.vm.box = "ubuntu/bionic64"
+  config.vm.box_version = "20191125.0.0"
   config.disksize.size = '30GB'
   config.vm.provider "virtualbox" do |v|
-    #v.memory = 4096
-    #v.cpus = 4
     v.customize [ "modifyvm", :id, "--uartmode1", "disconnected" ]
   end
   config.vm.synced_folder "./..", "/home/vagrant/workspace"
@@ -13,6 +11,7 @@ Vagrant.configure("2") do |config|
   config.vm.synced_folder "~/.ssh", "/home/vagrant/.ssh-keys"
   config.vm.network "forwarded_port", guest: 8080, host: 8080
   config.vm.network "forwarded_port", guest: 8200, host: 8200
+  config.vm.network "forwarded_port", guest: 8443, host: 8443
   config.vm.provision "ansible_local" do |ansible|
     ansible.verbose = true
     ansible.compatibility_mode = "2.0"
