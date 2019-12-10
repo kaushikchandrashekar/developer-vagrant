@@ -12,6 +12,8 @@ alias sync-time='sudo service ntp stop; sleep 10; sudo service ntp start; sleep 
 
 alias local-server='python3 -m http.server'
 
+alias kc='kubectl'
+
 alias tf-switch='tfswitch -b /home/vagrant/.local/bin/terraform -l'
 
 alias tf='terraform'
