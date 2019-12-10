@@ -97,6 +97,11 @@
     - name: install-kops
       import_role:
         name: andrewrothstein.kops
+    - name: install-helm
+      import_role:
+        name: andrewrothstein.kubernetes-helm
+      vars:
+        kubernetes_helm_ver: v2.16.1
     - name: install-vault
       import_role:
         name: andrewrothstein.vault
@@ -145,7 +150,7 @@
         path: ~/.zshrc
         state: present
         regexp: '^plugins=\('
-        line: 'plugins=(git terraform zsh-syntax-highlighting zsh-autosuggestions)'
+        line: 'plugins=(git aws terraform zsh-syntax-highlighting zsh-autosuggestions)'
     - name: update-path-to-include-local-bin
       become: yes
       become_user: vagrant

@@ -6,6 +6,8 @@
   version: v1.1.11
 - src: andrewrothstein.minikube
   version: v1.5.6
+- src: andrewrothstein.kubernetes-helm
+  version: v1.3.1
 - src: diodonfrost.terraform
   version: 1.0.2
 - src: andrewrothstein.vault
