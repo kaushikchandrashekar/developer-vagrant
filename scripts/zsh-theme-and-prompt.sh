@@ -1,13 +1,8 @@
 #!/bin/bash
 
-ZSH_THEME="agnoster"
-
-source "${ZSH}/themes/${ZSH_THEME}.zsh-theme"
-
-prompt_context() {
-    prompt_segment 234 246 '%n'
+function custom_robbyrussel() {
+  PROMPT="%{$fg_bold[blue]%}"'$(aws_prompt_info)'" %{$fg_bold[red]%}%n ${PROMPT}"
+  RPROMPT=''
 }
 
-prompt_dir() {
-    prompt_segment 008 black '%1~'
-}
+custom_robbyrussel
