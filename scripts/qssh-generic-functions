@@ -1,0 +1,48 @@
+#!/bin/bash
+
+set -Eeuo pipefail
+
+KEYS_DIR="${SSH_KEYS_DIR:-${HOME}/.ssh-keys}"
+
+function print_options() {
+  INDEXED_INSTANCE_DETAILS="${1}"
+  MESSAGE="${2}"
+  IP_FIELD="${3}"
+
+  MAX_INDEX_LENGTH=$(($(echo -n "${INDEXED_INSTANCE_DETAILS}" | jq '. | map(.index | tostring | length) | max') + 1))
+  MAX_NAME_LENGTH=$(($(echo -n "${INDEXED_INSTANCE_DETAILS}" | jq '. | map(.name | length) | max') + 1))
+
+  echo ""
+  echo "${MESSAGE}"
+  echo ""
+
+  for OPTION in $(echo -n "${INDEXED_INSTANCE_DETAILS}" | jq -r ".[] | {detail: ((.index|tostring) + \".|\" + (.name | gsub(\"[[:space:]]+\"; \"SPACE\")) + \"|\" + .${IP_FIELD} )} | .detail")
+  do
+    INDEX=$(echo -n "${OPTION}" | cut -d '|' -f 1)
+    NAME=$(echo -n "${OPTION}" | cut -d '|' -f 2 | sed 's|SPACE| |g')
+    IP=$(echo -n "${OPTION}" | cut -d '|' -f 3)
+    PADDED_INDEX=$(printf %"${MAX_INDEX_LENGTH}"s "${INDEX}")
+    PADDED_NAME=$(printf %-"${MAX_NAME_LENGTH}"s "${NAME}")
+    echo "${PADDED_INDEX}  ${PADDED_NAME} (${IP})"
+  done
+
+  echo ""
+}
+
+function lookup_key() {
+  KEY_PAIR="${1}"
+  KEY_PAIR_FINGERPRINT=$(aws ec2 describe-key-pairs --key-names "${KEY_PAIR}" | jq -r '.KeyPairs[0].KeyFingerprint')
+  for KEY_FILE in $(find ${KEYS_DIR} -type f); do
+    if [[ "${KEY_FILE}" != *".pub" ]]; then
+      KEY_FILE_FINGERPRINT=$(openssl pkcs8 -in "${KEY_FILE}" -nocrypt -topk8 -outform DER | openssl sha1 -c | awk '{print $2}')
+      if [[ "${KEY_PAIR_FINGERPRINT}" == "${KEY_FILE_FINGERPRINT}" ]]; then
+        echo -n "${KEY_FILE}"
+        break
+      fi
+    fi
+  done
+}
+
+function bastion_user() {
+  echo -n "ubuntu"
+}

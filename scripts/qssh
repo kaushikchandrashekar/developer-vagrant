@@ -1,0 +1,45 @@
+#!/bin/bash
+
+set -Eeuo pipefail
+
+source "$( dirname ${BASH_SOURCE[0]} )/qssh-generic-functions"
+
+INSTANCE_DETAILS=$(aws ec2 describe-instances | jq -c '.Reservations | {instances: map(.Instances) | add} | .instances |=map({id: .InstanceId, key: .KeyName, name: .Tags[] | select(.Key=="Name") | .Value, private_ip: .NetworkInterfaces[0].PrivateIpAddress, public_ip: .NetworkInterfaces[0].Association.PublicIp}) | .instances |=sort_by(.name) | .instances')
+
+FILTERED_INSTANCE_DETAILS=$(echo -n "${INSTANCE_DETAILS}")
+for SEARCH_STRING in "$@"
+do
+  FILTERED_INSTANCE_DETAILS=$(echo -n "${FILTERED_INSTANCE_DETAILS}" | jq -c ". | map(select(.name | ascii_downcase | contains(\"$(echo "${SEARCH_STRING}" | tr '[:upper:]' '[:lower:]')\")))")
+done
+
+INDEXED_FILTERED_INSTANCE_DETAILS=$(echo -n "${FILTERED_INSTANCE_DETAILS}" | jq -c ". | to_entries | map({index:.key, id:.value.id, key:.value.key, name:.value.name, private_ip:.value.private_ip, public_ip:.value.public_ip})")
+
+print_options "${INDEXED_FILTERED_INSTANCE_DETAILS}" "Choose an instance to ssh onto." "private_ip"
+read -p 'Instance: ' INSTANCE_INDEX
+
+BASTION_INSTANCE_DETAILS=$(echo -n "${INSTANCE_DETAILS}" | jq -c '. | map(select(.name | ascii_downcase | contains("bastion")))')
+INDEXED_BASTION_INSTANCE_DETAILS=$(echo -n "${BASTION_INSTANCE_DETAILS}" | jq -c ". | to_entries | map({index:.key, id:.value.id, key:.value.key, name:.value.name, private_ip:.value.private_ip, public_ip:.value.public_ip})")
+print_options "${INDEXED_BASTION_INSTANCE_DETAILS}" "Choose bastion instance to ssh through." "public_ip"
+read -p 'Bastion Instance: ' BASTION_INSTANCE_INDEX
+
+BASTION_IP=$(echo -n "${INDEXED_BASTION_INSTANCE_DETAILS}" | jq -r ".[] | select(.index == ${BASTION_INSTANCE_INDEX}) | .public_ip")
+BASTION_KEY_PAIR=$(echo -n "${INDEXED_BASTION_INSTANCE_DETAILS}" | jq -r ".[] | select(.index == ${BASTION_INSTANCE_INDEX}) | .key")
+BASTION_KEY=$(lookup_key "${BASTION_KEY_PAIR}")
+BASTION_INSTANCE_NAME=$(echo -n "${INDEXED_BASTION_INSTANCE_DETAILS}" | jq -r ".[] | select(.index == ${BASTION_INSTANCE_INDEX}) | .name")
+BASTION_USER=$(bastion_user "${BASTION_INSTANCE_NAME}")
+
+INSTANCE_IP=$(echo -n "${INDEXED_FILTERED_INSTANCE_DETAILS}" | jq -r ".[] | select(.index == ${INSTANCE_INDEX}) | .private_ip")
+INSTANCE_KEY_PAIR=$(echo -n "${INDEXED_FILTERED_INSTANCE_DETAILS}" | jq -r ".[] | select(.index == ${INSTANCE_INDEX}) | .key")
+INSTANCE_KEY=$(lookup_key "${INSTANCE_KEY_PAIR}")
+
+if [[ -z "${INSTANCE_KEY}" ]]; then
+  echo ""
+  read -p 'Path to key for instance: ' INSTANCE_KEY
+fi
+
+echo ""
+read -p 'Instance user (ubuntu): ' INSTANCE_USER
+INSTANCE_USER=${INSTANCE_USER:-ubuntu}
+
+echo ""
+ssh -q -o StrictHostKeyChecking=no -o ProxyCommand="ssh -q -o StrictHostKeyChecking=no -i ${BASTION_KEY} ${BASTION_USER}@${BASTION_IP} -W %h:%p" -i ${INSTANCE_KEY} ${INSTANCE_USER}@${INSTANCE_IP}
