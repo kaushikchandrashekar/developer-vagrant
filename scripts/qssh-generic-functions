@@ -4,6 +4,20 @@ set -Eeuo pipefail
 
 KEYS_DIR="${SSH_KEYS_DIR:-${HOME}/.ssh-keys}"
 
+function use_bastion() {
+  local -n use_bastion=${1}
+  local -n target_ip_field=${2}
+  echo ""
+  local use_bastion_default="y"
+  read -p "Ssh via bastion [y/n]? (${use_bastion_default}): " -n 1 use_bastion
+  use_bastion=$(echo -n "${use_bastion:-${use_bastion_default}}" | tr '[:upper:]' '[:lower:]')
+  if [[ "${use_bastion}" == "y" ]]; then
+    target_ip_field="private_ip"
+  else
+    target_ip_field="public_ip"
+  fi
+}
+
 function print_options() {
   local indexed_instance_details="${1}"
   local message="${2}"

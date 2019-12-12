@@ -7,13 +7,23 @@ source "$( dirname ${BASH_SOURCE[0]} )/qssh-override-functions"
 
 ALL_INSTANCES_DETAILS=$(aws ec2 describe-instances | jq -c '.Reservations | {instances: map(.Instances) | add} | .instances |=map({id: .InstanceId, key: .KeyName, name: .Tags[] | select(.Key=="Name") | .Value, private_ip: .NetworkInterfaces[0].PrivateIpAddress, public_ip: .NetworkInterfaces[0].Association.PublicIp}) | .instances |=sort_by(.name) | .instances')
 
-filter_instance_details BASTION_INSTANCES_DETAILS "${ALL_INSTANCES_DETAILS}" "bastion"
-instance_details BASTION_IP BASTION_KEY BASTION_USER "${BASTION_INSTANCES_DETAILS}" "public_ip" "Choose a bastion instance to ssh through." "Bastion Instance: " "bastion" "bastion_user"
+use_bastion USE_BASTION TARGET_IP_FIELD
+
+if [[ "${USE_BASTION}" == "y" ]]; then
+  filter_instance_details BASTION_INSTANCES_DETAILS "${ALL_INSTANCES_DETAILS}" "bastion"
+  instance_details BASTION_IP BASTION_KEY BASTION_USER "${BASTION_INSTANCES_DETAILS}" "public_ip" \
+    "Choose a bastion instance to ssh through." "Bastion Instance: " "bastion" "bastion_user"
+fi
 
 filter_instance_details TARGET_INSTANCES_DETAILS "${ALL_INSTANCES_DETAILS}" "${@}"
-instance_details TARGET_IP TARGET_KEY TARGET_USER "${TARGET_INSTANCES_DETAILS}" "private_ip" "Choose a target instance to ssh onto." "Target Instance: " "target" "instance_user"
+instance_details TARGET_IP TARGET_KEY TARGET_USER "${TARGET_INSTANCES_DETAILS}" "${TARGET_IP_FIELD}" \
+  "Choose a target instance to ssh onto." "Target Instance: " "target" "instance_user"
 
 echo ""
-ssh -q -o StrictHostKeyChecking=no \
+if [[ "${USE_BASTION}" == "y" ]]; then
+  ssh -q -o StrictHostKeyChecking=no \
     -o ProxyCommand="ssh -q -o StrictHostKeyChecking=no -i ${BASTION_KEY} ${BASTION_USER}@${BASTION_IP} -W %h:%p" \
     -i ${TARGET_KEY} ${TARGET_USER}@${TARGET_IP}
+else
+  ssh -q -o StrictHostKeyChecking=no -i ${TARGET_KEY} ${TARGET_USER}@${TARGET_IP}
+fi
