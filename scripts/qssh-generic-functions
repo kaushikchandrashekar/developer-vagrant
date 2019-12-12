@@ -5,44 +5,88 @@ set -Eeuo pipefail
 KEYS_DIR="${SSH_KEYS_DIR:-${HOME}/.ssh-keys}"
 
 function print_options() {
-  INDEXED_INSTANCE_DETAILS="${1}"
-  MESSAGE="${2}"
-  IP_FIELD="${3}"
+  local indexed_instance_details="${1}"
+  local message="${2}"
+  local ip_field="${3}"
 
-  MAX_INDEX_LENGTH=$(($(echo -n "${INDEXED_INSTANCE_DETAILS}" | jq '. | map(.index | tostring | length) | max') + 1))
-  MAX_NAME_LENGTH=$(($(echo -n "${INDEXED_INSTANCE_DETAILS}" | jq '. | map(.name | length) | max') + 1))
+  local max_index_length=$(($(echo -n "${indexed_instance_details}" | jq '. | map(.index | tostring | length) | max') + 1))
+  local max_name_length=$(($(echo -n "${indexed_instance_details}" | jq '. | map(.name | length) | max') + 1))
 
   echo ""
-  echo "${MESSAGE}"
+  echo "${message}"
   echo ""
 
-  for OPTION in $(echo -n "${INDEXED_INSTANCE_DETAILS}" | jq -r ".[] | {detail: ((.index|tostring) + \".|\" + (.name | gsub(\"[[:space:]]+\"; \"SPACE\")) + \"|\" + .${IP_FIELD} )} | .detail")
+  for option in $(echo -n "${indexed_instance_details}" | jq -r ".[] | {detail: ((.index|tostring) + \".|\" + (.name | gsub(\"[[:space:]]+\"; \"SPACE\")) + \"|\" + .${ip_field} )} | .detail")
   do
-    INDEX=$(echo -n "${OPTION}" | cut -d '|' -f 1)
-    NAME=$(echo -n "${OPTION}" | cut -d '|' -f 2 | sed 's|SPACE| |g')
-    IP=$(echo -n "${OPTION}" | cut -d '|' -f 3)
-    PADDED_INDEX=$(printf %"${MAX_INDEX_LENGTH}"s "${INDEX}")
-    PADDED_NAME=$(printf %-"${MAX_NAME_LENGTH}"s "${NAME}")
-    echo "${PADDED_INDEX}  ${PADDED_NAME} (${IP})"
+    index=$(echo -n "${option}" | cut -d '|' -f 1)
+    name=$(echo -n "${option}" | cut -d '|' -f 2 | sed 's|SPACE| |g')
+    ip=$(echo -n "${option}" | cut -d '|' -f 3)
+    padded_index=$(printf %"${max_index_length}"s "${index}")
+    padded_name=$(printf %-"${max_name_length}"s "${name}")
+    echo "${padded_index}  ${padded_name} (${ip})"
   done
 
   echo ""
 }
 
+function instance_details() {
+  local -n instance_ip=${1}
+  local -n instance_key=${2}
+  local -n instance_user=${3}
+  local instance_details=${4}
+  local ip_field=${5}
+  local selection_message=${6}
+  local selection_prompt=${7}
+  local identifier=${8}
+  local name_function=${9}
+  indexed_instance_details=$(echo -n "${instance_details}" | jq -c ". | to_entries | map({index:.key, id:.value.id, key:.value.key, name:.value.name, private_ip:.value.private_ip, public_ip:.value.public_ip})")
+  print_options "${indexed_instance_details}" "${selection_message}" "${ip_field}"
+  read -p "${selection_prompt}" instance_index
+  instance_ip=$(echo -n "${indexed_instance_details}" | jq -r ".[] | select(.index == ${instance_index}) | .${ip_field}")
+  instance_key_pair=$(echo -n "${indexed_instance_details}" | jq -r ".[] | select(.index == ${instance_index}) | .key")
+  lookup_key instance_key "${instance_key_pair}" "identifier"
+  instance_name=$(echo -n "${indexed_instance_details}" | jq -r ".[] | select(.index == ${instance_index}) | .name")
+  ${name_function} instance_user "${instance_name}"
+}
+
+function filter_instance_details() {
+  local -n filtered_instance_details=${1}
+  local instance_details=${2}
+  filtered_instance_details=$(echo -n "${instance_details}")
+  for search_string in "${@:3}"
+  do
+    filtered_instance_details=$(echo -n "${filtered_instance_details}" | jq -c ". | map(select(.name | ascii_downcase | contains(\"$(echo "${search_string}" | tr '[:upper:]' '[:lower:]')\")))")
+  done
+}
+
 function lookup_key() {
-  KEY_PAIR="${1}"
-  KEY_PAIR_FINGERPRINT=$(aws ec2 describe-key-pairs --key-names "${KEY_PAIR}" | jq -r '.KeyPairs[0].KeyFingerprint')
-  for KEY_FILE in $(find ${KEYS_DIR} -type f); do
-    if [[ "${KEY_FILE}" != *".pub" ]]; then
-      KEY_FILE_FINGERPRINT=$(openssl pkcs8 -in "${KEY_FILE}" -nocrypt -topk8 -outform DER | openssl sha1 -c | awk '{print $2}')
-      if [[ "${KEY_PAIR_FINGERPRINT}" == "${KEY_FILE_FINGERPRINT}" ]]; then
-        echo -n "${KEY_FILE}"
+  local -n key_path=${1}
+  local key_pair="${2}"
+  local identifier="${3}"
+  local key_pair_fingerprint=$(aws ec2 describe-key-pairs --key-names "${key_pair}" | jq -r '.KeyPairs[0].KeyFingerprint')
+  for key_file in $(find ${KEYS_DIR} -type f); do
+    if [[ "${key_file}" != *".pub" ]]; then
+      key_file_fingerprint=$(openssl pkcs8 -in "${key_file}" -nocrypt -topk8 -outform DER | openssl sha1 -c | awk '{print $2}')
+      if [[ "${key_pair_fingerprint}" == "${key_file_fingerprint}" ]]; then
+        key_path="${key_file}"
         break
       fi
     fi
   done
+  if [[ -z "${key_path-}" ]]; then
+    echo ""
+    read -p "Path to key for ${identifier} instance: " key_path
+  fi
 }
 
 function bastion_user() {
-  echo -n "ubuntu"
+  local -n user_name=${1}
+  user_name="ubuntu"
+}
+
+function instance_user() {
+  local -n user_name=${1}
+  echo ""
+  read -p "Instance user (ubuntu): " user_name
+  user_name=${user_name:-ubuntu}
 }
