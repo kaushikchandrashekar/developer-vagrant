@@ -18,6 +18,16 @@ function use_bastion() {
   fi
 }
 
+function empty_check() {
+  local instances_details="${1}"
+  local message="${2}"
+  if [[ $(echo -n "${instances_details}" | jq 'length') -eq 0 ]]; then
+    echo ""
+    echo "${message}"
+    exit 1
+  fi
+}
+
 function print_options() {
   local indexed_instance_details="${1}"
   local message="${2}"
