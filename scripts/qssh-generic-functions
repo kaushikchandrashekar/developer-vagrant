@@ -53,33 +53,33 @@ function print_options() {
   echo ""
 }
 
-function instance_details() {
+function select_and_get_instance_details() {
   local -n instance_ip=${1}
   local -n instance_key=${2}
   local -n instance_user=${3}
-  local instance_details=${4}
+  local instances_details=${4}
   local ip_field=${5}
   local selection_message=${6}
   local selection_prompt=${7}
   local identifier=${8}
   local name_function=${9}
-  indexed_instance_details=$(echo -n "${instance_details}" | jq -c ". | to_entries | map({index:.key, id:.value.id, key:.value.key, name:.value.name, private_ip:.value.private_ip, public_ip:.value.public_ip})")
-  print_options "${indexed_instance_details}" "${selection_message}" "${ip_field}"
+  indexed_instances_details=$(echo -n "${instances_details}" | jq -c ". | to_entries | map({index:.key, id:.value.id, key:.value.key, name:.value.name, private_ip:.value.private_ip, public_ip:.value.public_ip})")
+  print_options "${indexed_instances_details}" "${selection_message}" "${ip_field}"
   read -p "${selection_prompt}" instance_index
-  instance_ip=$(echo -n "${indexed_instance_details}" | jq -r ".[] | select(.index == ${instance_index}) | .${ip_field}")
-  instance_key_pair=$(echo -n "${indexed_instance_details}" | jq -r ".[] | select(.index == ${instance_index}) | .key")
-  lookup_key instance_key "${instance_key_pair}" "identifier"
-  instance_name=$(echo -n "${indexed_instance_details}" | jq -r ".[] | select(.index == ${instance_index}) | .name")
+  instance_ip=$(echo -n "${indexed_instances_details}" | jq -r ".[] | select(.index == ${instance_index}) | .${ip_field}")
+  instance_key_pair=$(echo -n "${indexed_instances_details}" | jq -r ".[] | select(.index == ${instance_index}) | .key")
+  lookup_key instance_key "${instance_key_pair}" "${identifier}"
+  instance_name=$(echo -n "${indexed_instances_details}" | jq -r ".[] | select(.index == ${instance_index}) | .name")
   ${name_function} instance_user "${instance_name}"
 }
 
-function filter_instance_details() {
-  local -n filtered_instance_details=${1}
-  local instance_details=${2}
-  filtered_instance_details=$(echo -n "${instance_details}")
+function filter_instances_details() {
+  local -n filtered_instances_details=${1}
+  local instances_details=${2}
+  filtered_instances_details=$(echo -n "${instances_details}")
   for search_string in "${@:3}"
   do
-    filtered_instance_details=$(echo -n "${filtered_instance_details}" | jq -c ". | map(select(.name | ascii_downcase | contains(\"$(echo "${search_string}" | tr '[:upper:]' '[:lower:]')\")))")
+    filtered_instances_details=$(echo -n "${filtered_instances_details}" | jq -c ". | map(select(.name | ascii_downcase | contains(\"$(echo "${search_string}" | tr '[:upper:]' '[:lower:]')\")))")
   done
 }
 
