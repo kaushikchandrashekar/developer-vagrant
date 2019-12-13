@@ -29,18 +29,18 @@ function empty_check() {
 }
 
 function print_options() {
-  local indexed_instance_details="${1}"
+  local indexed_instances_details="${1}"
   local message="${2}"
   local ip_field="${3}"
 
-  local max_index_length=$(($(echo -n "${indexed_instance_details}" | jq '. | map(.index | tostring | length) | max') + 1))
-  local max_name_length=$(($(echo -n "${indexed_instance_details}" | jq '. | map(.name | length) | max') + 1))
+  local max_index_length=$(($(echo -n "${indexed_instances_details}" | jq '. | map(.index | tostring | length) | max') + 1))
+  local max_name_length=$(($(echo -n "${indexed_instances_details}" | jq '. | map(.name | length) | max') + 1))
 
   echo ""
   echo "${message}"
   echo ""
 
-  for option in $(echo -n "${indexed_instance_details}" | jq -r ".[] | {detail: ((.index|tostring) + \".|\" + (.name | gsub(\"[[:space:]]+\"; \"SPACE\")) + \"|\" + .${ip_field} )} | .detail")
+  for option in $(echo -n "${indexed_instances_details}" | jq -r ".[] | {detail: ((.index|tostring) + \".|\" + (.name | gsub(\"[[:space:]]+\"; \"SPACE\")) + \"|\" + .${ip_field} )} | .detail")
   do
     index=$(echo -n "${option}" | cut -d '|' -f 1)
     name=$(echo -n "${option}" | cut -d '|' -f 2 | sed 's|SPACE| |g')
