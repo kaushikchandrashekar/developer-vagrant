@@ -9,11 +9,10 @@ ALL_INSTANCES_DETAILS=$(aws ec2 describe-instances | jq -c '.Reservations | {ins
 
 filter_instances_details TARGET_INSTANCES_DETAILS "${ALL_INSTANCES_DETAILS}" "${@}"
 empty_check "${TARGET_INSTANCES_DETAILS}" "No target instances found"
-print_batch_confirmation "${TARGET_INSTANCES_DETAILS}" "Execute command on below instances"
+print_batch_confirmation "${TARGET_INSTANCES_DETAILS}" "Copy files onto below instances"
 
-capture_argument BATCH_COMMAND "Enter command to be executed on targets"
-
-BATCH_COMMAND="echo \"executing [${BATCH_COMMAND}] in \$(hostname -I | awk '{print \$1}')\"; echo ''; ${BATCH_COMMAND} || true; echo ''"
+capture_argument FILE_PATH_ON_HOST "Path of file on host"
+capture_argument FILE_PATH_ON_TARGET "Path of file on target"
 
 use_bastion USE_BASTION TARGET_IP_FIELD
 
@@ -30,11 +29,13 @@ for INSTANCE_DETAILS in $(echo -n "${TARGET_INSTANCES_DETAILS}" | jq -c '.[]' | 
   set_instance_details_in_vars TARGET_IP TARGET_KEY "${INSTANCE_DETAILS}" "${TARGET_IP_FIELD}"
   if [[ "${USE_BASTION}" == "y" ]]; then
     echo ""
-    ssh -q -o StrictHostKeyChecking=no \
+    echo "copying ${FILE_PATH_ON_HOST} to ${FILE_PATH_ON_TARGET} on ${TARGET_IP}"
+    scp -q -o StrictHostKeyChecking=no \
       -o ProxyCommand="ssh -q -o StrictHostKeyChecking=no -i ${BASTION_KEY} ${BASTION_USER}@${BASTION_IP} -W %h:%p" \
-      -i ${TARGET_KEY} ${TARGET_USER}@${TARGET_IP} ${BATCH_COMMAND}
+      -i ${TARGET_KEY} ${FILE_PATH_ON_HOST} ${TARGET_USER}@${TARGET_IP}:${FILE_PATH_ON_TARGET}
   else
     echo ""
-    ssh -q -o StrictHostKeyChecking=no -i ${TARGET_KEY} ${TARGET_USER}@${TARGET_IP} ${BATCH_COMMAND}
+    echo "copying ${FILE_PATH_ON_HOST} to ${FILE_PATH_ON_TARGET} on ${TARGET_IP}"
+    ssh -q -o StrictHostKeyChecking=no -i ${TARGET_KEY} ${FILE_PATH_ON_HOST} ${TARGET_USER}@${TARGET_IP}:${FILE_PATH_ON_TARGET}
   fi
 done

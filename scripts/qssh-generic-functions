@@ -83,10 +83,11 @@ function filter_instances_details() {
   done
 }
 
-function capture_batch_command() {
-  local -n batch_command=${1}
+function capture_argument() {
+  local -n argument=${1}
+  local message=${2}
   echo ""
-  read -p "Enter command to be executed on targets: " batch_command
+  read -p "${message}: " argument
 }
 
 function capture_user_for_all_instances() {
@@ -110,9 +111,10 @@ function set_instance_details_in_vars() {
 
 function print_batch_confirmation() {
   local instances_details="${1}"
+  local message="${2}"
 
   echo ""
-  echo "Execute command on below instances"
+  echo "${message}"
   echo ""
 
   for option in $(echo -n "${instances_details}" | jq -r ".[] | .name | gsub(\"[[:space:]]+\"; \"SPACE\")")
