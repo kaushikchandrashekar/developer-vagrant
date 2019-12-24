@@ -12,7 +12,6 @@ empty_check "${TARGET_INSTANCES_DETAILS}" "No target instances found"
 print_batch_confirmation "${TARGET_INSTANCES_DETAILS}" "Execute command on below instances"
 
 capture_argument BATCH_COMMAND "Enter command to be executed on targets"
-
 BATCH_COMMAND="echo \"executing [${BATCH_COMMAND}] in \$(hostname -I | awk '{print \$1}')\"; echo ''; ${BATCH_COMMAND} || true; echo ''"
 
 use_bastion USE_BASTION TARGET_IP_FIELD
@@ -20,21 +19,19 @@ use_bastion USE_BASTION TARGET_IP_FIELD
 if [[ "${USE_BASTION}" == "y" ]]; then
   filter_instances_details BASTION_INSTANCES_DETAILS "${ALL_INSTANCES_DETAILS}" "bastion"
   empty_check "${BASTION_INSTANCES_DETAILS}" "No bastion instances found"
-  select_and_set_instance_details_in_vars BASTION_IP BASTION_KEY BASTION_USER "${BASTION_INSTANCES_DETAILS}" "public_ip" \
-    "Choose a bastion instance to ssh through." "Bastion Instance: " "bastion" "bastion_user"
+  select_and_set_instance_details_in_vars BASTION_IP BASTION_KEY BASTION_USER "${BASTION_INSTANCES_DETAILS}" \
+    "public_ip" "Choose a bastion instance to ssh through."
 fi
 
-capture_user_for_all_instances TARGET_USER "ubuntu"
-
 for INSTANCE_DETAILS in $(echo -n "${TARGET_INSTANCES_DETAILS}" | jq -c '.[]' | sed 's| |SPACE|g'); do
-  set_instance_details_in_vars TARGET_IP TARGET_KEY "${INSTANCE_DETAILS}" "${TARGET_IP_FIELD}"
+  set_instance_details_in_vars TARGET_IP TARGET_KEY TARGET_USER "${INSTANCE_DETAILS}" "${TARGET_IP_FIELD}"
+  newline
   if [[ "${USE_BASTION}" == "y" ]]; then
-    echo ""
     ssh -q -o StrictHostKeyChecking=no \
       -o ProxyCommand="ssh -q -o StrictHostKeyChecking=no -i ${BASTION_KEY} ${BASTION_USER}@${BASTION_IP} -W %h:%p" \
       -i ${TARGET_KEY} ${TARGET_USER}@${TARGET_IP} ${BATCH_COMMAND}
   else
-    echo ""
-    ssh -q -o StrictHostKeyChecking=no -i ${TARGET_KEY} ${TARGET_USER}@${TARGET_IP} ${BATCH_COMMAND}
+    ssh -q -o StrictHostKeyChecking=no \
+      -i ${TARGET_KEY} ${TARGET_USER}@${TARGET_IP} ${BATCH_COMMAND}
   fi
 done

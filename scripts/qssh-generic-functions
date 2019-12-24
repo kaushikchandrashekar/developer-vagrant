@@ -4,10 +4,14 @@ set -Eeuo pipefail
 
 KEYS_DIR="${SSH_KEYS_DIR:-${HOME}/.ssh-keys}"
 
+function newline() {
+  echo ""
+}
+
 function use_bastion() {
   local -n use_bastion=${1}
   local -n target_ip_field=${2}
-  echo ""
+  newline
   local use_bastion_default="y"
   read -p "Ssh via bastion [y/n]? (${use_bastion_default}): " -n 1 use_bastion
   use_bastion=$(echo -n "${use_bastion:-${use_bastion_default}}" | tr '[:upper:]' '[:lower:]')
@@ -22,7 +26,7 @@ function empty_check() {
   local instances_details="${1}"
   local message="${2}"
   if [[ $(echo -n "${instances_details}" | jq 'length') -eq 0 ]]; then
-    echo ""
+    newline
     echo "${message}"
     exit 1
   fi
@@ -36,9 +40,9 @@ function print_options() {
   local max_index_length=$(($(echo -n "${indexed_instances_details}" | jq '. | map(.index | tostring | length) | max') + 1))
   local max_name_length=$(($(echo -n "${indexed_instances_details}" | jq '. | map(.name | length) | max') + 1))
 
-  echo ""
+  newline
   echo "${message}"
-  echo ""
+  newline
 
   for option in $(echo -n "${indexed_instances_details}" | jq -r ".[] | {detail: ((.index|tostring) + \".|\" + (.name | gsub(\"[[:space:]]+\"; \"SPACE\")) + \"|\" + .${ip_field} )} | .detail")
   do
@@ -49,8 +53,6 @@ function print_options() {
     padded_name=$(printf %-"${max_name_length}"s "${name}")
     echo "${padded_index}  ${padded_name} (${ip})"
   done
-
-  echo ""
 }
 
 function select_and_set_instance_details_in_vars() {
@@ -60,17 +62,14 @@ function select_and_set_instance_details_in_vars() {
   local instances_details=${4}
   local ip_field=${5}
   local selection_message=${6}
-  local selection_prompt=${7}
-  local identifier=${8}
-  local name_function=${9}
   indexed_instances_details=$(echo -n "${instances_details}" | jq -c ". | to_entries | map({index:.key, id:.value.id, key:.value.key, name:.value.name, private_ip:.value.private_ip, public_ip:.value.public_ip})")
   print_options "${indexed_instances_details}" "${selection_message}" "${ip_field}"
-  read -p "${selection_prompt}" instance_index
+  capture_argument_with_default instance_index "Instance" "0"
   instance_ip=$(echo -n "${indexed_instances_details}" | jq -r ".[] | select(.index == ${instance_index}) | .${ip_field}")
   instance_key_pair=$(echo -n "${indexed_instances_details}" | jq -r ".[] | select(.index == ${instance_index}) | .key")
-  lookup_key instance_key "${instance_key_pair}" "${identifier}"
   instance_name=$(echo -n "${indexed_instances_details}" | jq -r ".[] | select(.index == ${instance_index}) | .name")
-  ${name_function} instance_user "${instance_name}"
+  lookup_key instance_key "${instance_key_pair}" "${instance_name}"
+  instance_user instance_user "${instance_name}"
 }
 
 function filter_instances_details() {
@@ -86,36 +85,39 @@ function filter_instances_details() {
 function capture_argument() {
   local -n argument=${1}
   local message=${2}
-  echo ""
+  newline
   read -p "${message}: " argument
 }
 
-function capture_user_for_all_instances() {
-  local -n pre_chosen_user_name=${1}
-  local default_pre_chosen_user_name=${2}
-  echo ""
-  read -p "User to be used for all instances (${default_pre_chosen_user_name}): " pre_chosen_user_name
-  pre_chosen_user_name=${pre_chosen_user_name:-${default_pre_chosen_user_name}}
+function capture_argument_with_default() {
+  local -n argument=${1}
+  local message=${2}
+  local default_value=${3}
+  newline
+  read -p "${message} (${default_value}): " argument
+  argument=${argument:-${default_value}}
 }
 
 function set_instance_details_in_vars() {
   local -n instance_ip=${1}
   local -n instance_key=${2}
-  local instance_details="${3}"
-  local ip_field=${4}
+  local -n instance_user=${3}
+  local instance_details="${4}"
+  local ip_field=${5}
   instance_ip=$(echo -n "${instance_details}" | jq -r ".${ip_field}")
   instance_key_pair=$(echo -n "${instance_details}" | jq -r ".key")
   instance_name=$(echo -n "${instance_details}" | jq -r ".name")
   lookup_key instance_key "${instance_key_pair}" "${instance_name}"
+  instance_user instance_user "${instance_name}"
 }
 
 function print_batch_confirmation() {
   local instances_details="${1}"
   local message="${2}"
 
-  echo ""
+  newline
   echo "${message}"
-  echo ""
+  newline
 
   for option in $(echo -n "${instances_details}" | jq -r ".[] | .name | gsub(\"[[:space:]]+\"; \"SPACE\")")
   do
@@ -124,7 +126,7 @@ function print_batch_confirmation() {
   done
 
   local confirmation_default="y"
-  echo ""
+  newline
   read -p "Proceed [y/n]? (y): " -n 1 confirmation
   confirmation=$(echo -n "${confirmation:-${confirmation_default}}" | tr '[:upper:]' '[:lower:]')
   if [[ "${confirmation}" != "y" ]]; then
@@ -135,7 +137,7 @@ function print_batch_confirmation() {
 function lookup_key() {
   local -n key_path=${1}
   local key_pair="${2}"
-  local identifier="${3}"
+  local instance_name="${3}"
   local key_pair_fingerprint=$(aws ec2 describe-key-pairs --key-names "${key_pair}" | jq -r '.KeyPairs[0].KeyFingerprint')
   for key_file in $(find ${KEYS_DIR} -type f); do
     if [[ "${key_file}" != *".pub" ]]; then
@@ -147,19 +149,12 @@ function lookup_key() {
     fi
   done
   if [[ -z "${key_path-}" ]]; then
-    echo ""
-    read -p "Path to key for ${identifier} instance: " key_path
+    capture_argument key_path "Path to key for ${instance_name}"
   fi
-}
-
-function bastion_user() {
-  local -n user_name=${1}
-  user_name="ubuntu"
 }
 
 function instance_user() {
   local -n user_name=${1}
-  echo ""
-  read -p "Instance user (ubuntu): " user_name
-  user_name=${user_name:-ubuntu}
+  local instance_name="${2}"
+  capture_argument_with_default user_name "User for ${instance_name}" "ubuntu"
 }

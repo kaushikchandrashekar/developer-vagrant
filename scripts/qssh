@@ -12,16 +12,16 @@ use_bastion USE_BASTION TARGET_IP_FIELD
 if [[ "${USE_BASTION}" == "y" ]]; then
   filter_instances_details BASTION_INSTANCES_DETAILS "${ALL_INSTANCES_DETAILS}" "bastion"
   empty_check "${BASTION_INSTANCES_DETAILS}" "No bastion instances found"
-  select_and_set_instance_details_in_vars BASTION_IP BASTION_KEY BASTION_USER "${BASTION_INSTANCES_DETAILS}" "public_ip" \
-    "Choose a bastion instance to ssh through." "Bastion Instance: " "bastion" "bastion_user"
+  select_and_set_instance_details_in_vars BASTION_IP BASTION_KEY BASTION_USER "${BASTION_INSTANCES_DETAILS}" \
+    "public_ip" "Choose a bastion instance to ssh through."
 fi
 
 filter_instances_details TARGET_INSTANCES_DETAILS "${ALL_INSTANCES_DETAILS}" "${@}"
 empty_check "${TARGET_INSTANCES_DETAILS}" "No target instances found"
-select_and_set_instance_details_in_vars TARGET_IP TARGET_KEY TARGET_USER "${TARGET_INSTANCES_DETAILS}" "${TARGET_IP_FIELD}" \
-  "Choose a target instance to ssh onto." "Target Instance: " "target" "instance_user"
+select_and_set_instance_details_in_vars TARGET_IP TARGET_KEY TARGET_USER "${TARGET_INSTANCES_DETAILS}" \
+  "${TARGET_IP_FIELD}" "Choose a target instance to ssh onto."
 
-echo ""
+newline
 if [[ "${USE_BASTION}" == "y" ]]; then
   ssh -q -o StrictHostKeyChecking=no \
     -o ProxyCommand="ssh -q -o StrictHostKeyChecking=no -i ${BASTION_KEY} ${BASTION_USER}@${BASTION_IP} -W %h:%p" \
