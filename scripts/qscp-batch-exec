@@ -2,8 +2,10 @@
 
 set -Eeuo pipefail
 
-source "$( dirname ${BASH_SOURCE[0]} )/qssh-generic-functions"
-source "$( dirname ${BASH_SOURCE[0]} )/qssh-override-functions"
+# shellcheck source=${HOME}/workspace/developer-vagrant/scripts/qssh-generic-functions
+source "$( dirname "${BASH_SOURCE[0]}" )/qssh-generic-functions"
+# shellcheck source=${HOME}/workspace/developer-vagrant/scripts/qssh-override-functions
+source "$( dirname "${BASH_SOURCE[0]}" )/qssh-override-functions"
 
 all_instances_details ALL_INSTANCES_DETAILS
 
@@ -22,9 +24,9 @@ for INSTANCE_DETAILS in $(echo -n "${TARGET_INSTANCES_DETAILS}" | jq -c '.[]' | 
     choose_bastion BASTION_IP BASTION_KEY BASTION_USER "${ALL_INSTANCES_DETAILS}" "${TARGET_VPC}"
     scp -q -o StrictHostKeyChecking=no \
       -o ProxyCommand="ssh -q -o StrictHostKeyChecking=no -i ${BASTION_KEY} ${BASTION_USER}@${BASTION_IP} -W %h:%p" \
-      -i ${TARGET_KEY} ${FILE_PATH_ON_HOST} ${TARGET_USER}@${TARGET_IP}:${FILE_PATH_ON_TARGET}
+      -i "${TARGET_KEY}" "${FILE_PATH_ON_HOST}" "${TARGET_USER}@${TARGET_IP}:${FILE_PATH_ON_TARGET}"
   else
     scp -q -o StrictHostKeyChecking=no \
-      -i ${TARGET_KEY} ${FILE_PATH_ON_HOST} ${TARGET_USER}@${TARGET_IP}:${FILE_PATH_ON_TARGET}
+      -i "${TARGET_KEY}" "${FILE_PATH_ON_HOST}" "${TARGET_USER}@${TARGET_IP}:${FILE_PATH_ON_TARGET}"
   fi
 done

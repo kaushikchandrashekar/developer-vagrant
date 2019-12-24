@@ -2,8 +2,10 @@
 
 set -Eeuo pipefail
 
-source "$( dirname ${BASH_SOURCE[0]} )/qssh-generic-functions"
-source "$( dirname ${BASH_SOURCE[0]} )/qssh-override-functions"
+# shellcheck source=${HOME}/workspace/developer-vagrant/scripts/qssh-generic-functions
+source "$( dirname "${BASH_SOURCE[0]}" )/qssh-generic-functions"
+# shellcheck source=${HOME}/workspace/developer-vagrant/scripts/qssh-override-functions
+source "$( dirname "${BASH_SOURCE[0]}" )/qssh-override-functions"
 
 all_instances_details ALL_INSTANCES_DETAILS
 
@@ -17,8 +19,9 @@ if [[ "${USE_BASTION}" == "y" ]]; then
   newline
   ssh -q -o StrictHostKeyChecking=no \
     -o ProxyCommand="ssh -q -o StrictHostKeyChecking=no -i ${BASTION_KEY} ${BASTION_USER}@${BASTION_IP} -W %h:%p" \
-    -i ${TARGET_KEY} ${TARGET_USER}@${TARGET_IP}
+    -i "${TARGET_KEY}" "${TARGET_USER}@${TARGET_IP}"
 else
   newline
-  ssh -q -o StrictHostKeyChecking=no -i ${TARGET_KEY} ${TARGET_USER}@${TARGET_IP}
+  ssh -q -o StrictHostKeyChecking=no \
+    -i "${TARGET_KEY}" "${TARGET_USER}@${TARGET_IP}"
 fi

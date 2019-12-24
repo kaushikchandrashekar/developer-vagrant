@@ -37,14 +37,11 @@ function print_instance_detail() {
 function print_instance_choice_options() {
   local indexed_instances_details="${1}"
   local message="${2}"
-
   local max_index_length=$(($(echo -n "${indexed_instances_details}" | jq '. | map(.index | tostring | length) | max') + 1))
   local max_name_length=$(($(echo -n "${indexed_instances_details}" | jq '. | map(.name | length) | max') + 1))
-
   newline
   echo "${message}"
   newline
-
   for option in $(echo -n "${indexed_instances_details}" | jq -r ".[] | {detail: ((.index|tostring) + \".|\" + (.name | gsub(\"[[:space:]]+\"; \"SPACE\")) + \"|\" + .public_ip + \"|\" + .private_ip )} | .detail")
   do
     index=$(echo -n "${option}" | cut -d '|' -f 1)
@@ -54,7 +51,7 @@ function print_instance_choice_options() {
     [[ -z "${public_ip}" ]] && instance_ip="${private_ip}" || instance_ip="${public_ip}"
     padded_index=$(printf %"${max_index_length}"s "${index}")
     padded_name=$(printf %-"${max_name_length}"s "${name}")
-    echo "${padded_index}  ${padded_name} (${instance_ip})"
+    echo " ${padded_index} ${padded_name} (${instance_ip})"
   done
 }
 
@@ -119,7 +116,7 @@ function capture_argument() {
   local -n argument=${1}
   local message=${2}
   newline
-  read -p "${message}: " argument
+  read -r -p "${message}: " argument
 }
 
 function capture_argument_with_default() {
@@ -127,7 +124,7 @@ function capture_argument_with_default() {
   local message=${2}
   local default_value=${3}
   newline
-  read -p "${message} (${default_value}): " argument
+  read -r -p "${message} (${default_value}): " argument
   argument=${argument:-${default_value}}
 }
 
