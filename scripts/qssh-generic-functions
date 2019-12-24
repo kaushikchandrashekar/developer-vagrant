@@ -8,6 +8,11 @@ function newline() {
   echo ""
 }
 
+function all_instances_details() {
+  local -n all_instances_details=${1}
+  all_instances_details=$(aws ec2 describe-instances --filters "Name=instance-state-code,Values=16" | jq -c '.Reservations | {instances: map(.Instances) | add} | .instances |=map({id: .InstanceId, key: .KeyName, name: .Tags[] | select(.Key=="Name") | .Value, vpc_id: .VpcId, private_ip: .NetworkInterfaces[0].PrivateIpAddress, public_ip: .NetworkInterfaces[0].Association.PublicIp}) | .instances |=sort_by(.name) | .instances')
+}
+
 function empty_check() {
   local instances_details="${1}"
   local message="${2}"
@@ -191,10 +196,19 @@ function lookup_key() {
   fi
 }
 
+function known_user() {
+  local -n known_user_name=${1}
+  local instance_name=$(echo -n "${2}" | tr '[:upper:]' '[:lower:]')
+  known_user_name=""
+}
+
 function instance_user() {
   local -n user_name=${1}
   local instance_name="${2}"
-  capture_argument_with_default user_name "User for ${instance_name}" "ubuntu"
+  known_user user_name "${instance_name}"
+  if [[ -z "${user_name-}" ]]; then
+    capture_argument_with_default user_name "User for ${instance_name}" "ubuntu"
+  fi
 }
 
 function choose_bastion() {

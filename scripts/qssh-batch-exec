@@ -5,7 +5,7 @@ set -Eeuo pipefail
 source "$( dirname ${BASH_SOURCE[0]} )/qssh-generic-functions"
 source "$( dirname ${BASH_SOURCE[0]} )/qssh-override-functions"
 
-ALL_INSTANCES_DETAILS=$(aws ec2 describe-instances --filters "Name=instance-state-code,Values=16" | jq -c '.Reservations | {instances: map(.Instances) | add} | .instances |=map({id: .InstanceId, key: .KeyName, name: .Tags[] | select(.Key=="Name") | .Value, vpc_id: .VpcId, private_ip: .NetworkInterfaces[0].PrivateIpAddress, public_ip: .NetworkInterfaces[0].Association.PublicIp}) | .instances |=sort_by(.name) | .instances')
+all_instances_details ALL_INSTANCES_DETAILS
 
 filter_instances_details TARGET_INSTANCES_DETAILS "${ALL_INSTANCES_DETAILS}" "${@}"
 empty_check "${TARGET_INSTANCES_DETAILS}" "No target instances found"
