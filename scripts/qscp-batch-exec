@@ -5,7 +5,7 @@ set -Eeuo pipefail
 source "$( dirname ${BASH_SOURCE[0]} )/qssh-generic-functions"
 source "$( dirname ${BASH_SOURCE[0]} )/qssh-override-functions"
 
-ALL_INSTANCES_DETAILS=$(aws ec2 describe-instances --filters "Name=instance-state-code,Values=16" | jq -c '.Reservations | {instances: map(.Instances) | add} | .instances |=map({id: .InstanceId, key: .KeyName, name: .Tags[] | select(.Key=="Name") | .Value, private_ip: .NetworkInterfaces[0].PrivateIpAddress, public_ip: .NetworkInterfaces[0].Association.PublicIp}) | .instances |=sort_by(.name) | .instances')
+ALL_INSTANCES_DETAILS=$(aws ec2 describe-instances --filters "Name=instance-state-code,Values=16" | jq -c '.Reservations | {instances: map(.Instances) | add} | .instances |=map({id: .InstanceId, key: .KeyName, name: .Tags[] | select(.Key=="Name") | .Value, vpc_id: .VpcId, private_ip: .NetworkInterfaces[0].PrivateIpAddress, public_ip: .NetworkInterfaces[0].Association.PublicIp}) | .instances |=sort_by(.name) | .instances')
 
 filter_instances_details TARGET_INSTANCES_DETAILS "${ALL_INSTANCES_DETAILS}" "${@}"
 empty_check "${TARGET_INSTANCES_DETAILS}" "No target instances found"
@@ -14,20 +14,12 @@ print_batch_confirmation "${TARGET_INSTANCES_DETAILS}" "Copy files onto below in
 capture_argument FILE_PATH_ON_HOST "Path of file on host"
 capture_argument FILE_PATH_ON_TARGET "Path of file on target"
 
-use_bastion USE_BASTION TARGET_IP_FIELD
-
-if [[ "${USE_BASTION}" == "y" ]]; then
-  filter_instances_details BASTION_INSTANCES_DETAILS "${ALL_INSTANCES_DETAILS}" "bastion"
-  empty_check "${BASTION_INSTANCES_DETAILS}" "No bastion instances found"
-  select_and_set_instance_details_in_vars BASTION_IP BASTION_KEY BASTION_USER "${BASTION_INSTANCES_DETAILS}" \
-    "public_ip" "Choose a bastion instance to ssh through."
-fi
-
 for INSTANCE_DETAILS in $(echo -n "${TARGET_INSTANCES_DETAILS}" | jq -c '.[]' | sed 's| |SPACE|g'); do
-  set_instance_details_in_vars TARGET_IP TARGET_KEY TARGET_USER "${INSTANCE_DETAILS}" "${TARGET_IP_FIELD}"
+  set_instance_details_in_vars TARGET_IP TARGET_KEY TARGET_USER TARGET_VPC USE_BASTION "${INSTANCE_DETAILS}"
   newline
   echo "copying ${FILE_PATH_ON_HOST} to ${FILE_PATH_ON_TARGET} on ${TARGET_IP}"
   if [[ "${USE_BASTION}" == "y" ]]; then
+    choose_bastion BASTION_IP BASTION_KEY BASTION_USER "${ALL_INSTANCES_DETAILS}" "${TARGET_VPC}"
     scp -q -o StrictHostKeyChecking=no \
       -o ProxyCommand="ssh -q -o StrictHostKeyChecking=no -i ${BASTION_KEY} ${BASTION_USER}@${BASTION_IP} -W %h:%p" \
       -i ${TARGET_KEY} ${FILE_PATH_ON_HOST} ${TARGET_USER}@${TARGET_IP}:${FILE_PATH_ON_TARGET}
