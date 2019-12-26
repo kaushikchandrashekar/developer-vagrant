@@ -24,8 +24,10 @@ for INSTANCE_DETAILS in $(echo -n "${TARGET_INSTANCES_DETAILS}" | jq -c '.[]' | 
     ssh -q -o StrictHostKeyChecking=no \
       -o ProxyCommand="ssh -q -o StrictHostKeyChecking=no -i ${BASTION_KEY} ${BASTION_USER}@${BASTION_IP} -W %h:%p" \
       -i "${TARGET_KEY}" "${TARGET_USER}@${TARGET_IP}" "${BATCH_COMMAND}"
+    unset BASTION_IP BASTION_KEY BASTION_USER
   else
     ssh -q -o StrictHostKeyChecking=no \
       -i "${TARGET_KEY}" "${TARGET_USER}@${TARGET_IP}" "${BATCH_COMMAND}"
   fi
+  unset TARGET_IP TARGET_KEY TARGET_USER TARGET_VPC USE_BASTION
 done

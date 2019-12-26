@@ -55,6 +55,28 @@ function print_instance_choice_options() {
   done
 }
 
+function instance_ips() {
+  local -n instance_public_ip=${1}
+  local -n instance_private_ip=${2}
+  local instance_details=${3}
+  instance_public_ip=$(echo -n "${instance_details}" | jq -r '.public_ip + ""')
+  instance_private_ip=$(echo -n "${instance_details}" | jq -r '.private_ip + ""')
+}
+
+function ip_and_bation_usage() {
+  local -n instance_ip_ref=${1}
+  local -n use_bastion_ref=${2}
+  local instance_details=${3}
+  instance_ips public_ip private_ip "${instance_details}"
+  if [[ -z "${public_ip}" ]]; then
+    use_bastion_ref="y"
+    instance_ip_ref="${private_ip}"
+  else
+    use_bastion_ref="n"
+    instance_ip_ref="${public_ip}"
+  fi
+}
+
 function select_and_set_instance_details_in_vars() {
   local -n instance_ip=${1}
   local -n instance_key=${2}
@@ -73,20 +95,28 @@ function select_and_set_instance_details_in_vars() {
     print_instance_choice_options "${indexed_instances_details}" "Choose a ${context} instance to connect ${action}."
     capture_argument_with_default instance_index "Instance" "0"
   fi
-  public_ip=$(echo -n "${indexed_instances_details}" | jq -r ".[] | select(.index == ${instance_index}) | .public_ip")
-  private_ip=$(echo -n "${indexed_instances_details}" | jq -r ".[] | select(.index == ${instance_index}) | .private_ip")
-  if [[ "${public_ip}" == "null" ]]; then
-    use_bastion="y"
-    instance_ip="${private_ip}"
-  else
-    use_bastion="n"
-    instance_ip="${public_ip}"
-  fi
+  instance_details=$(echo -n "${indexed_instances_details}" | jq -r ".[] | select(.index == ${instance_index})")
+  ip_and_bation_usage instance_ip use_bastion "${instance_details}"
   instance_key_pair=$(echo -n "${indexed_instances_details}" | jq -r ".[] | select(.index == ${instance_index}) | .key")
   instance_name=$(echo -n "${indexed_instances_details}" | jq -r ".[] | select(.index == ${instance_index}) | .name")
   lookup_key instance_key "${instance_key_pair}" "${instance_name}"
   instance_user instance_user "${instance_name}"
   instance_vpc=$(echo -n "${indexed_instances_details}" | jq -r ".[] | select(.index == ${instance_index}) | .vpc_id")
+}
+
+function set_instance_details_in_vars() {
+  local -n instance_ip=${1}
+  local -n instance_key=${2}
+  local -n instance_user=${3}
+  local -n instance_vpc=${4}
+  local -n use_bastion=${5}
+  local instance_details="${6}"
+  ip_and_bation_usage instance_ip use_bastion "${instance_details}"
+  instance_key_pair=$(echo -n "${instance_details}" | jq -r ".key")
+  instance_name=$(echo -n "${instance_details}" | jq -r ".name")
+  lookup_key instance_key "${instance_key_pair}" "${instance_name}"
+  instance_user instance_user "${instance_name}"
+  instance_vpc=$(echo -n "${instance_details}" | jq -r ".vpc_id")
 }
 
 function filter_instances_details() {
@@ -126,29 +156,6 @@ function capture_argument_with_default() {
   newline
   read -r -p "${message} (${default_value}): " argument
   argument=${argument:-${default_value}}
-}
-
-function set_instance_details_in_vars() {
-  local -n instance_ip=${1}
-  local -n instance_key=${2}
-  local -n instance_user=${3}
-  local -n instance_vpc=${4}
-  local -n use_bastion=${5}
-  local instance_details="${6}"
-  public_ip=$(echo -n "${instance_details}" | jq -r ".public_ip")
-  private_ip=$(echo -n "${instance_details}" | jq -r ".private_ip")
-  if [[ "${public_ip}" == "null" ]]; then
-    use_bastion="y"
-    instance_ip="${private_ip}"
-  else
-    use_bastion="n"
-    instance_ip="${public_ip}"
-  fi
-  instance_key_pair=$(echo -n "${instance_details}" | jq -r ".key")
-  instance_name=$(echo -n "${instance_details}" | jq -r ".name")
-  lookup_key instance_key "${instance_key_pair}" "${instance_name}"
-  instance_user instance_user "${instance_name}"
-  instance_vpc=$(echo -n "${instance_details}" | jq -r ".vpc_id")
 }
 
 function print_batch_confirmation() {
