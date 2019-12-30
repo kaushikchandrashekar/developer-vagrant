@@ -55,6 +55,26 @@ function print_instance_choice_options() {
   done
 }
 
+function set_scp_vars() {
+  local -n message=${1}
+  local -n source_path=${2}
+  local -n target_path=${3}
+  local ltr_or_rtl="${4}"
+  local host_path="${5}"
+  local remote_path="${6}"
+  local remote_user="${7}"
+  local remote_ip="${8}"
+  if [[ "${ltr_or_rtl}" == "ltr" ]]; then
+    message="copying ${host_path} on host to ${remote_path} on ${remote_ip}"
+    source_path="${host_path}"
+    target_path="${remote_user}@${remote_ip}:${remote_path}"
+  else
+    message="copying ${remote_path} from ${remote_ip} to ${host_path}.${remote_ip} on host"
+    source_path="${remote_user}@${remote_ip}:${remote_path}"
+    target_path="${host_path}.${remote_ip}"
+  fi
+}
+
 function instance_ips() {
   local -n instance_public_ip=${1}
   local -n instance_private_ip=${2}

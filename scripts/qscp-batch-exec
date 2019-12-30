@@ -13,22 +13,24 @@ filter_instances_details TARGET_INSTANCES_DETAILS "${ALL_INSTANCES_DETAILS}" "${
 empty_check "${TARGET_INSTANCES_DETAILS}" "No target instances found"
 print_batch_confirmation "${TARGET_INSTANCES_DETAILS}" "Copy files onto below instances"
 
+capture_argument_with_default LTR_OR_RTL "Local to remote [ltr] or Remote to local [rtl]" "ltr"
 capture_argument FILE_PATH_ON_HOST "Path of file on host"
 capture_argument FILE_PATH_ON_TARGET "Path of file on target"
 
 for INSTANCE_DETAILS in $(echo -n "${TARGET_INSTANCES_DETAILS}" | jq -c '.[]' | sed 's| |SPACE|g'); do
   set_instance_details_in_vars TARGET_IP TARGET_KEY TARGET_USER TARGET_VPC USE_BASTION "${INSTANCE_DETAILS}"
+  set_scp_vars SCP_MESSAGE SOURCE_PATH TARGET_PATH "${LTR_OR_RTL}" "${FILE_PATH_ON_HOST}" "${FILE_PATH_ON_TARGET}" "${TARGET_USER}" "${TARGET_IP}"
   newline
-  echo "copying ${FILE_PATH_ON_HOST} to ${FILE_PATH_ON_TARGET} on ${TARGET_IP}"
+  echo "${SCP_MESSAGE}"
   if [[ "${USE_BASTION}" == "y" ]]; then
     choose_bastion BASTION_IP BASTION_KEY BASTION_USER "${ALL_INSTANCES_DETAILS}" "${TARGET_VPC}"
     scp -q -o StrictHostKeyChecking=no \
       -o ProxyCommand="ssh -q -o StrictHostKeyChecking=no -i ${BASTION_KEY} ${BASTION_USER}@${BASTION_IP} -W %h:%p" \
-      -i "${TARGET_KEY}" "${FILE_PATH_ON_HOST}" "${TARGET_USER}@${TARGET_IP}:${FILE_PATH_ON_TARGET}"
+      -i "${TARGET_KEY}" "${SOURCE_PATH}" "${TARGET_PATH}"
     unset BASTION_IP BASTION_KEY BASTION_USER
   else
     scp -q -o StrictHostKeyChecking=no \
-      -i "${TARGET_KEY}" "${FILE_PATH_ON_HOST}" "${TARGET_USER}@${TARGET_IP}:${FILE_PATH_ON_TARGET}"
+      -i "${TARGET_KEY}" "${SOURCE_PATH}" "${TARGET_PATH}"
   fi
-  unset TARGET_IP TARGET_KEY TARGET_USER TARGET_VPC USE_BASTION
+  unset TARGET_IP TARGET_KEY TARGET_USER TARGET_VPC USE_BASTION SCP_MESSAGE SOURCE_PATH TARGET_PATH
 done
