@@ -55,6 +55,31 @@ function print_instance_choice_options() {
   done
 }
 
+function print_batch_confirmation() {
+  local instances_details="${1}"
+  local message="${2}"
+  local max_name_length=$(($(echo -n "${instances_details}" | jq '. | map(.name | length) | max') + 1))
+  newline
+  echo "${message}"
+  newline
+  for option in $(echo -n "${instances_details}" | jq -r ".[] | {detail: ((.name | gsub(\"[[:space:]]+\"; \"SPACE\")) + \"|\" + .public_ip + \"|\" + .private_ip )} | .detail")
+  do
+    name=$(echo -n "${option}" | cut -d '|' -f 1 | sed 's|SPACE| |g')
+    public_ip=$(echo -n "${option}" | cut -d '|' -f 2)
+    private_ip=$(echo -n "${option}" | cut -d '|' -f 3)
+    [[ -z "${public_ip}" ]] && instance_ip="${private_ip}" || instance_ip="${public_ip}"
+    padded_name=$(printf %-"${max_name_length}"s "${name}")
+    echo " - ${padded_name} (${instance_ip})"
+  done
+  local confirmation_default="y"
+  newline
+  read -p "Proceed [y/n]? (y): " -n 1 confirmation
+  confirmation=$(echo -n "${confirmation:-${confirmation_default}}" | tr '[:upper:]' '[:lower:]')
+  if [[ "${confirmation}" != "y" ]]; then
+    exit 1
+  fi
+}
+
 function set_scp_vars() {
   local -n message=${1}
   local -n source_path=${2}
@@ -65,11 +90,11 @@ function set_scp_vars() {
   local remote_user="${7}"
   local remote_ip="${8}"
   if [[ "${ltr_or_rtl}" == "ltr" ]]; then
-    message="copying ${host_path} on host to ${remote_path} on ${remote_ip}"
+    message="Copying ${host_path} on host to ${remote_path} on ${remote_ip}"
     source_path="${host_path}"
     target_path="${remote_user}@${remote_ip}:${remote_path}"
   else
-    message="copying ${remote_path} from ${remote_ip} to ${host_path}.${remote_ip} on host"
+    message="Copying ${remote_path} from ${remote_ip} to ${host_path}.${remote_ip} on host"
     source_path="${remote_user}@${remote_ip}:${remote_path}"
     target_path="${host_path}.${remote_ip}"
   fi
@@ -176,29 +201,6 @@ function capture_argument_with_default() {
   newline
   read -r -p "${message} (${default_value}): " argument
   argument=${argument:-${default_value}}
-}
-
-function print_batch_confirmation() {
-  local instances_details="${1}"
-  local message="${2}"
-
-  newline
-  echo "${message}"
-  newline
-
-  for option in $(echo -n "${instances_details}" | jq -r ".[] | .name | gsub(\"[[:space:]]+\"; \"SPACE\")")
-  do
-    name=$(echo -n "${option}" | sed 's|SPACE| |g')
-    echo " - ${name}"
-  done
-
-  local confirmation_default="y"
-  newline
-  read -p "Proceed [y/n]? (y): " -n 1 confirmation
-  confirmation=$(echo -n "${confirmation:-${confirmation_default}}" | tr '[:upper:]' '[:lower:]')
-  if [[ "${confirmation}" != "y" ]]; then
-    exit 1
-  fi
 }
 
 function lookup_key() {

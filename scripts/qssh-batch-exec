@@ -14,20 +14,29 @@ empty_check "${TARGET_INSTANCES_DETAILS}" "No target instances found"
 print_batch_confirmation "${TARGET_INSTANCES_DETAILS}" "Execute command on below instances"
 
 capture_argument BATCH_COMMAND "Enter command to be executed on targets"
-BATCH_COMMAND="echo \"executing [${BATCH_COMMAND}] in \$(hostname -I | awk '{print \$1}')\"; echo ''; ${BATCH_COMMAND} || true; echo ''"
+FAIL_SAFE_PRETTY_PRINT_BATCH_COMMAND="${BATCH_COMMAND}; echo ''; printf '%.0s_' {1..100}; echo '' || true"
 
+newline
+echo "Starting batch exec."
+printf '%.0s=' {1..100}
+newline
 for INSTANCE_DETAILS in $(echo -n "${TARGET_INSTANCES_DETAILS}" | jq -c '.[]' | sed 's| |SPACE|g'); do
   set_instance_details_in_vars TARGET_IP TARGET_KEY TARGET_USER TARGET_VPC USE_BASTION "${INSTANCE_DETAILS}"
-  newline
   if [[ "${USE_BASTION}" == "y" ]]; then
     choose_bastion BASTION_IP BASTION_KEY BASTION_USER "${ALL_INSTANCES_DETAILS}" "${TARGET_VPC}"
+    newline
+    echo "Executing [${BATCH_COMMAND}] in ${TARGET_IP}"
+    newline
     ssh -q -o StrictHostKeyChecking=no \
       -o ProxyCommand="ssh -q -o StrictHostKeyChecking=no -i ${BASTION_KEY} ${BASTION_USER}@${BASTION_IP} -W %h:%p" \
-      -i "${TARGET_KEY}" "${TARGET_USER}@${TARGET_IP}" "${BATCH_COMMAND}"
+      -i "${TARGET_KEY}" "${TARGET_USER}@${TARGET_IP}" "${FAIL_SAFE_PRETTY_PRINT_BATCH_COMMAND}"
     unset BASTION_IP BASTION_KEY BASTION_USER
   else
+    newline
+    echo "Executing [${BATCH_COMMAND}] in ${TARGET_IP}"
+    newline
     ssh -q -o StrictHostKeyChecking=no \
-      -i "${TARGET_KEY}" "${TARGET_USER}@${TARGET_IP}" "${BATCH_COMMAND}"
+      -i "${TARGET_KEY}" "${TARGET_USER}@${TARGET_IP}" "${FAIL_SAFE_PRETTY_PRINT_BATCH_COMMAND}"
   fi
   unset TARGET_IP TARGET_KEY TARGET_USER TARGET_VPC USE_BASTION
 done
