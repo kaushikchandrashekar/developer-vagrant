@@ -203,18 +203,32 @@ function capture_argument_with_default() {
   argument=${argument:-${default_value}}
 }
 
+function get_key_pair_fingerprint() {
+  local -n key_pair_fingerprint_ref=${1}
+  local key_pair=${2}
+  key_pair_fingerprint_ref=$(aws ec2 describe-key-pairs --key-names "${key_pair}" | jq -r '.KeyPairs[0].KeyFingerprint')
+}
+
+function get_key_file_fingerprint() {
+  local -n key_file_fingerprint_ref=${1}
+  local key_file=${2}
+  if openssl pkcs8 -in "${key_file}" -nocrypt -topk8 -outform DER &> /dev/null; then
+    key_file_fingerprint_ref=$(openssl pkcs8 -in "${key_file}" -nocrypt -topk8 -outform DER | openssl sha1 -c | awk '{print $2}')
+  else
+    key_file_fingerprint_ref=""
+  fi
+}
+
 function lookup_key() {
   local -n key_path=${1}
   local key_pair="${2}"
   local instance_name="${3}"
-  local key_pair_fingerprint=$(aws ec2 describe-key-pairs --key-names "${key_pair}" | jq -r '.KeyPairs[0].KeyFingerprint')
-  for key_file in $(find ${KEYS_DIR} -type f); do
-    if [[ "${key_file}" != *".pub" ]]; then
-      key_file_fingerprint=$(openssl pkcs8 -in "${key_file}" -nocrypt -topk8 -outform DER | openssl sha1 -c | awk '{print $2}')
-      if [[ "${key_pair_fingerprint}" == "${key_file_fingerprint}" ]]; then
-        key_path="${key_file}"
-        break
-      fi
+  get_key_pair_fingerprint key_pair_fingerprint "${key_pair}"
+  for key_file in $(find "${KEYS_DIR}" -type f -print0 | xargs -0 grep 'PRIVATE' | cut -d ':' -f 1 | sort -u); do
+    get_key_file_fingerprint key_file_fingerprint "${key_file}"
+    if [[ "${key_pair_fingerprint}" == "${key_file_fingerprint}" ]]; then
+      key_path="${key_file}"
+      break
     fi
   done
   if [[ -z "${key_path-}" ]]; then
