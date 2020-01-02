@@ -2,3 +2,4 @@
 .vagrant/
 *.iml
 .idea/
+scripts/environment-variables.sh
