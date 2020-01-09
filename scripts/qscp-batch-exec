@@ -15,7 +15,7 @@ print_batch_confirmation "${TARGET_INSTANCES_DETAILS}" "Copy files onto below in
 
 capture_argument_with_default LTR_OR_RTL "Local to remote [ltr] or Remote to local [rtl]" "ltr"
 capture_argument FILE_PATH_ON_HOST "Path of file on host"
-capture_argument FILE_PATH_ON_TARGET "Path of file on target"
+capture_argument_with_default FILE_PATH_ON_TARGET "Path of file on target" "/tmp/$(basename "${FILE_PATH_ON_HOST}")"
 
 newline
 for INSTANCE_DETAILS in $(echo -n "${TARGET_INSTANCES_DETAILS}" | jq -c '.[]' | sed 's| |SPACE|g'); do
