@@ -26,14 +26,14 @@ for INSTANCE_DETAILS in $(echo -n "${TARGET_INSTANCES_DETAILS}" | jq -c '.[]' | 
     newline
     echo "${SCP_MESSAGE}"
     newline
-    scp -q -o StrictHostKeyChecking=no \
+    scp -r -q -o StrictHostKeyChecking=no \
       -o ProxyCommand="ssh -q -o StrictHostKeyChecking=no -i ${BASTION_KEY} ${BASTION_USER}@${BASTION_IP} -W %h:%p" \
       -i "${TARGET_KEY}" "${SOURCE_PATH}" "${TARGET_PATH}"
     unset BASTION_IP BASTION_KEY BASTION_USER
   else
     echo "${SCP_MESSAGE}"
     newline
-    scp -q -o StrictHostKeyChecking=no \
+    scp -r -q -o StrictHostKeyChecking=no \
       -i "${TARGET_KEY}" "${SOURCE_PATH}" "${TARGET_PATH}"
   fi
   unset TARGET_IP TARGET_KEY TARGET_USER TARGET_VPC USE_BASTION SCP_MESSAGE SOURCE_PATH TARGET_PATH
