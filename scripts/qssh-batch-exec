@@ -21,22 +21,23 @@ echo "Starting batch exec."
 printf '%.0s=' {1..100}
 newline
 for INSTANCE_DETAILS in $(echo -n "${TARGET_INSTANCES_DETAILS}" | jq -c '.[]' | sed 's| |SPACE|g'); do
-  set_instance_details_in_vars TARGET_IP TARGET_KEY TARGET_USER TARGET_VPC USE_BASTION "${INSTANCE_DETAILS}"
+  set_instance_details_in_vars TARGET_IP TARGET_KEY TARGET_USER TARGET_VPC USE_BASTION SSH_PASS_COMMAND \
+    SSH_PASS_ARG SSH_KEY_ARG "${INSTANCE_DETAILS}"
   if [[ "${USE_BASTION}" == "y" ]]; then
     choose_bastion BASTION_IP BASTION_KEY BASTION_USER "${ALL_INSTANCES_DETAILS}" "${TARGET_VPC}"
     newline
     echo "Executing [${BATCH_COMMAND}] in ${TARGET_IP}"
     newline
-    ssh -q -o StrictHostKeyChecking=no \
+    ${SSH_PASS_COMMAND} ${SSH_PASS_ARG} ssh -q -o StrictHostKeyChecking=no \
       -o ProxyCommand="ssh -q -o StrictHostKeyChecking=no -i ${BASTION_KEY} ${BASTION_USER}@${BASTION_IP} -W %h:%p" \
-      -i "${TARGET_KEY}" "${TARGET_USER}@${TARGET_IP}" "${FAIL_SAFE_PRETTY_PRINT_BATCH_COMMAND}"
+      ${SSH_KEY_ARG} ${TARGET_KEY} "${TARGET_USER}@${TARGET_IP}" "${FAIL_SAFE_PRETTY_PRINT_BATCH_COMMAND}"
     unset BASTION_IP BASTION_KEY BASTION_USER
   else
     newline
     echo "Executing [${BATCH_COMMAND}] in ${TARGET_IP}"
     newline
-    ssh -q -o StrictHostKeyChecking=no \
-      -i "${TARGET_KEY}" "${TARGET_USER}@${TARGET_IP}" "${FAIL_SAFE_PRETTY_PRINT_BATCH_COMMAND}"
+    ${SSH_PASS_COMMAND} ${SSH_PASS_ARG} ssh -q -o StrictHostKeyChecking=no \
+      ${SSH_KEY_ARG} ${TARGET_KEY} "${TARGET_USER}@${TARGET_IP}" "${FAIL_SAFE_PRETTY_PRINT_BATCH_COMMAND}"
   fi
   unset TARGET_IP TARGET_KEY TARGET_USER TARGET_VPC USE_BASTION
 done

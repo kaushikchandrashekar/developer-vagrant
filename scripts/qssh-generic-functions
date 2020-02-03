@@ -128,9 +128,12 @@ function select_and_set_instance_details_in_vars() {
   local -n instance_user=${3}
   local -n instance_vpc=${4}
   local -n use_bastion=${5}
-  local instances_details=${6}
-  local context=${7}
-  local action=${8}
+  local -n ssh_pass_command=${6}
+  local -n ssh_pass_arg=${7}
+  local -n ssh_key_arg=${8}
+  local instances_details=${9}
+  local context=${10}
+  local action=${11}
   indexed_instances_details=$(echo -n "${instances_details}" | jq -c ". | to_entries | map({index:.key, id:.value.id, key:.value.key, name:.value.name, vpc_id:.value.vpc_id, private_ip:.value.private_ip, public_ip:.value.public_ip})")
   if [[ $(echo -n "${indexed_instances_details}" | jq 'length') -eq 1 ]]; then
     newline
@@ -142,10 +145,25 @@ function select_and_set_instance_details_in_vars() {
   fi
   instance_details=$(echo -n "${indexed_instances_details}" | jq -r ".[] | select(.index == ${instance_index})")
   ip_and_bation_usage instance_ip use_bastion "${instance_details}"
-  instance_key_pair=$(echo -n "${indexed_instances_details}" | jq -r ".[] | select(.index == ${instance_index}) | .key")
   instance_name=$(echo -n "${indexed_instances_details}" | jq -r ".[] | select(.index == ${instance_index}) | .name")
-  lookup_key instance_key "${instance_key_pair}" "${instance_name}"
-  instance_user instance_user "${instance_name}"
+  instance_key_pair=$(echo -n "${indexed_instances_details}" | jq -r ".[] | select(.index == ${instance_index}) | .key + \"\"")
+  if [[ -z "${instance_key_pair}" ]]; then
+    ssh_pass_command="sshpass"
+    ssh_pass_arg="-e"
+    ssh_key_arg=""
+    instance_key=""
+    if [[ -z "${SSHPASS_USER}" ]]; then
+      instance_user instance_user "${instance_name}"
+    else
+      instance_user="${SSHPASS_USER}"
+    fi
+  else
+    ssh_pass_command=""
+    ssh_pass_arg=""
+    ssh_key_arg="-i"
+    lookup_key instance_key "${instance_key_pair}" "${instance_name}"
+    instance_user instance_user "${instance_name}"
+  fi
   instance_vpc=$(echo -n "${indexed_instances_details}" | jq -r ".[] | select(.index == ${instance_index}) | .vpc_id")
 }
 
@@ -155,12 +173,30 @@ function set_instance_details_in_vars() {
   local -n instance_user=${3}
   local -n instance_vpc=${4}
   local -n use_bastion=${5}
-  local instance_details="${6}"
+  local -n ssh_pass_command=${6}
+  local -n ssh_pass_arg=${7}
+  local -n ssh_key_arg=${8}
+  local instance_details="${9}"
   ip_and_bation_usage instance_ip use_bastion "${instance_details}"
-  instance_key_pair=$(echo -n "${instance_details}" | jq -r ".key")
   instance_name=$(echo -n "${instance_details}" | jq -r ".name")
-  lookup_key instance_key "${instance_key_pair}" "${instance_name}"
-  instance_user instance_user "${instance_name}"
+  instance_key_pair=$(echo -n "${instance_details}" | jq -r ".key + \"\"")
+  if [[ -z "${instance_key_pair}" ]]; then
+    ssh_pass_command="sshpass"
+    ssh_pass_arg="-e"
+    ssh_key_arg=""
+    instance_key=""
+    if [[ -z "${SSHPASS_USER}" ]]; then
+      instance_user instance_user "${instance_name}"
+    else
+      instance_user="${SSHPASS_USER}"
+    fi
+  else
+    ssh_pass_command=""
+    ssh_pass_arg=""
+    ssh_key_arg="-i"
+    lookup_key instance_key "${instance_key_pair}" "${instance_name}"
+    instance_user instance_user "${instance_name}"
+  fi
   instance_vpc=$(echo -n "${instance_details}" | jq -r ".vpc_id")
 }
 
@@ -264,6 +300,7 @@ function choose_bastion() {
   filter_public_instances_details possible_bastion_instances_details "${all_instances_details}"
   filter_vpc_instances_details possible_bastion_instances_details "${possible_bastion_instances_details}" "${target_vpc_id}"
   empty_check "${possible_bastion_instances_details}" "No bastion instances found"
-  select_and_set_instance_details_in_vars bastion_ip bastion_key bastion_user bastion_vpc ignore_use_bastion \
-    "${possible_bastion_instances_details}" "bastion" "through"
+  select_and_set_instance_details_in_vars bastion_ip bastion_key bastion_user bastion_vpc ignore_use_bastion  \
+    ignore_ssh_pass_command ignore_ssh_pass_arg ignore_ssh_key_arg "${possible_bastion_instances_details}" "bastion" \
+    "through"
 }
