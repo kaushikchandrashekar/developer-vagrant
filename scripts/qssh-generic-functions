@@ -122,6 +122,12 @@ function ip_and_bation_usage() {
   fi
 }
 
+function check_if_is_password_based_access_instance() {
+  local -n is_password_based_access_instance_ref=${1}
+  local instance_name="${2}"
+  is_password_based_access_instance_ref="no"
+}
+
 function select_and_set_instance_details_in_vars() {
   local -n instance_ip=${1}
   local -n instance_key=${2}
@@ -147,7 +153,8 @@ function select_and_set_instance_details_in_vars() {
   ip_and_bation_usage instance_ip use_bastion "${instance_details}"
   instance_name=$(echo -n "${indexed_instances_details}" | jq -r ".[] | select(.index == ${instance_index}) | .name")
   instance_key_pair=$(echo -n "${indexed_instances_details}" | jq -r ".[] | select(.index == ${instance_index}) | .key + \"\"")
-  if [[ -z "${instance_key_pair}" ]]; then
+  check_if_is_password_based_access_instance is_password_based_access_instance "${instance_name}"
+  if [[ -z "${instance_key_pair}" ]] || [[ "${is_password_based_access_instance}" == "yes" ]]; then
     ssh_pass_command="sshpass"
     ssh_pass_arg="-e"
     ssh_key_arg=""
@@ -180,7 +187,8 @@ function set_instance_details_in_vars() {
   ip_and_bation_usage instance_ip use_bastion "${instance_details}"
   instance_name=$(echo -n "${instance_details}" | jq -r ".name")
   instance_key_pair=$(echo -n "${instance_details}" | jq -r ".key + \"\"")
-  if [[ -z "${instance_key_pair}" ]]; then
+  check_if_is_password_based_access_instance is_password_based_access_instance "${instance_name}"
+  if [[ -z "${instance_key_pair}" ]] || [[ "${is_password_based_access_instance}" == "yes" ]]; then
     ssh_pass_command="sshpass"
     ssh_pass_arg="-e"
     ssh_key_arg=""
