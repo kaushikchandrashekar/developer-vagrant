@@ -98,10 +98,25 @@
       import_role:
         name: andrewrothstein.kops
     - name: install-helm
-      import_role:
+      include_role:
         name: andrewrothstein.kubernetes-helm
       vars:
-        kubernetes_helm_ver: v2.16.1
+        kubernetes_helm_ver: "{{ helm_version_item }}"
+      loop_control:
+        loop_var: helm_version_item
+      loop:
+      - v2.16.1
+      - v3.0.3
+    - name: create-aliases-for-helm
+      become: yes
+      become_user: root
+      file:
+        src: "/usr/local/bin/helm-{{ item.version }}/linux-amd64/helm"
+        dest: "/usr/local/bin/{{ item.alias }}"
+        state: link
+      loop:
+      - { version: 'v2.16.1', alias: 'helm2' }
+      - { version: 'v3.0.3', alias: 'helm3' }
     - name: install-vault
       import_role:
         name: andrewrothstein.vault
