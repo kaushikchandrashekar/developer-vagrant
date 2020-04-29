@@ -4,6 +4,8 @@ Vagrant.configure("2") do |config|
   config.disksize.size = '30GB'
   config.vm.provider "virtualbox" do |v|
     v.customize [ "modifyvm", :id, "--uartmode1", "disconnected" ]
+    v.memory = 4096
+    v.cpus = 2
   end
   config.vm.synced_folder "./..", "/home/vagrant/workspace"
   config.vm.synced_folder "./scripts", "/home/vagrant/scripts"
