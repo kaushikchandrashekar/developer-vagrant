@@ -303,12 +303,15 @@ function choose_bastion() {
   local -n bastion_ip=${1}
   local -n bastion_key=${2}
   local -n bastion_user=${3}
-  local all_instances_details="${4}"
-  local target_vpc_id="${5}"
+  local -n bastion_ssh_pass_command=${4}
+  local -n bastion_ssh_pass_arg=${5}
+  local -n bastion_ssh_key_arg=${6}
+  local all_instances_details="${7}"
+  local target_vpc_id="${8}"
   filter_public_instances_details possible_bastion_instances_details "${all_instances_details}"
   filter_vpc_instances_details possible_bastion_instances_details "${possible_bastion_instances_details}" "${target_vpc_id}"
   empty_check "${possible_bastion_instances_details}" "No bastion instances found"
   select_and_set_instance_details_in_vars bastion_ip bastion_key bastion_user bastion_vpc ignore_use_bastion  \
-    ignore_ssh_pass_command ignore_ssh_pass_arg ignore_ssh_key_arg "${possible_bastion_instances_details}" "bastion" \
+    bastion_ssh_pass_command bastion_ssh_pass_arg bastion_ssh_key_arg "${possible_bastion_instances_details}" "bastion" \
     "through"
 }

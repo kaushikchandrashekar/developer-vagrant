@@ -23,12 +23,13 @@ for INSTANCE_DETAILS in $(echo -n "${TARGET_INSTANCES_DETAILS}" | jq -c '.[]' | 
     SSH_PASS_ARG SSH_KEY_ARG "${INSTANCE_DETAILS}"
   set_scp_vars SCP_MESSAGE SOURCE_PATH TARGET_PATH "${LTR_OR_RTL}" "${FILE_PATH_ON_HOST}" "${FILE_PATH_ON_TARGET}" "${TARGET_USER}" "${TARGET_IP}"
   if [[ "${USE_BASTION}" == "y" ]]; then
-    choose_bastion BASTION_IP BASTION_KEY BASTION_USER "${ALL_INSTANCES_DETAILS}" "${TARGET_VPC}"
+    choose_bastion BASTION_IP BASTION_KEY BASTION_USER BASTION_SSH_PASS_COMMAND BASTION_SSH_PASS_ARG BASTION_SSH_KEY_ARG \
+      "${ALL_INSTANCES_DETAILS}" "${TARGET_VPC}"
     newline
     echo "${SCP_MESSAGE}"
     newline
     ${SSH_PASS_COMMAND} ${SSH_PASS_ARG} scp -r -q -o StrictHostKeyChecking=no \
-      -o ProxyCommand="ssh -q -o StrictHostKeyChecking=no -i ${BASTION_KEY} ${BASTION_USER}@${BASTION_IP} -W %h:%p" \
+      -o ProxyCommand="${BASTION_SSH_PASS_COMMAND} ${BASTION_SSH_PASS_ARG} ssh -q -o StrictHostKeyChecking=no ${BASTION_SSH_KEY_ARG} ${BASTION_KEY} ${BASTION_USER}@${BASTION_IP} -W %h:%p" \
       ${SSH_KEY_ARG} ${TARGET_KEY} "${SOURCE_PATH}" "${TARGET_PATH}"
     unset BASTION_IP BASTION_KEY BASTION_USER
   else

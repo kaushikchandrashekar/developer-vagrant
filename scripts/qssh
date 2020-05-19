@@ -15,10 +15,11 @@ select_and_set_instance_details_in_vars TARGET_IP TARGET_KEY TARGET_USER TARGET_
   SSH_PASS_ARG SSH_KEY_ARG "${TARGET_INSTANCES_DETAILS}" "target" "onto"
 
 if [[ "${USE_BASTION}" == "y" ]]; then
-  choose_bastion BASTION_IP BASTION_KEY BASTION_USER "${ALL_INSTANCES_DETAILS}" "${TARGET_VPC}"
+  choose_bastion BASTION_IP BASTION_KEY BASTION_USER BASTION_SSH_PASS_COMMAND BASTION_SSH_PASS_ARG BASTION_SSH_KEY_ARG \
+    "${ALL_INSTANCES_DETAILS}" "${TARGET_VPC}"
   newline
   ${SSH_PASS_COMMAND} ${SSH_PASS_ARG} ssh -q -o StrictHostKeyChecking=no \
-    -o ProxyCommand="ssh -q -o StrictHostKeyChecking=no -i ${BASTION_KEY} ${BASTION_USER}@${BASTION_IP} -W %h:%p" \
+    -o ProxyCommand="${BASTION_SSH_PASS_COMMAND} ${BASTION_SSH_PASS_ARG} ssh -q -o StrictHostKeyChecking=no ${BASTION_SSH_KEY_ARG} ${BASTION_KEY} ${BASTION_USER}@${BASTION_IP} -W %h:%p" \
     ${SSH_KEY_ARG} ${TARGET_KEY} "${TARGET_USER}@${TARGET_IP}"
 else
   newline
