@@ -1,9 +1,9 @@
 - src: geerlingguy.docker
   version: 2.5.3
 - src: andrewrothstein.kubectl
-  version: v1.1.30
+  version: v1.1.54
 - src: andrewrothstein.minikube
-  version: v1.5.6
+  version: v1.5.31
 - src: andrewrothstein.kubernetes-helm
   version: v1.3.4
 - src: diodonfrost.terraform

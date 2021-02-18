@@ -112,6 +112,14 @@
         - { version: '1.15.3', release_context: 'v1.15.3' }
         - { version: '1.18.3', release_context: 'v1.18.3' }
         - { version: '1.19.0', release_context: 'v1.19.0' }
+    - name: default-kops-version
+      file:
+        src: /usr/local/bin/kops-1-15-0
+        dest: /usr/local/bin/kops
+        state: link
+        owner: vagrant
+        group: vagrant
+        mode: 0775
     - name: install-helm
       include_role:
         name: andrewrothstein.kubernetes-helm
