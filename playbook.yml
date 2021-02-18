@@ -101,8 +101,17 @@
       import_role:
         name: andrewrothstein.kubectl
     - name: install-kops
-      import_role:
-        name: andrewrothstein.kops
+      get_url:
+        url: https://github.com/kubernetes/kops/releases/download/{{ item.release_context }}/kops-linux-amd64
+        dest: /usr/local/bin/kops-{{ item.version | replace('.','-') }}
+        owner: vagrant
+        group: vagrant
+        mode: 0775
+      loop:
+        - { version: '1.15.0', release_context: '1.15.0' }
+        - { version: '1.15.3', release_context: 'v1.15.3' }
+        - { version: '1.18.3', release_context: 'v1.18.3' }
+        - { version: '1.19.0', release_context: 'v1.19.0' }
     - name: install-helm
       include_role:
         name: andrewrothstein.kubernetes-helm

@@ -2,8 +2,6 @@
   version: 2.5.3
 - src: andrewrothstein.kubectl
   version: v1.1.30
-- src: andrewrothstein.kops
-  version: v1.1.11
 - src: andrewrothstein.minikube
   version: v1.5.6
 - src: andrewrothstein.kubernetes-helm
