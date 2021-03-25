@@ -1,8 +1,10 @@
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu/bionic64"
   config.vm.box_version = "20191125.0.0"
+  # comment below line if encountering disk size error
   config.disksize.size = '30GB'
   config.vm.provider "virtualbox" do |v|
+    # comment below line if using MacOS BigSur or later
     v.customize [ "modifyvm", :id, "--uartmode1", "disconnected" ]
     v.memory = 4096
     v.cpus = 2
