@@ -1,6 +1,6 @@
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu/bionic64"
-  config.vm.box_version = "20191125.0.0"
+  config.vm.box_version = "20210623.0.0"
   # comment below line if encountering disk size error
   config.disksize.size = '30GB'
   config.vm.provider "virtualbox" do |v|
