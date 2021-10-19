@@ -195,21 +195,20 @@
       ansible.builtin.group:
         name: golang
         state: present
-    - name: add-vagrant-user-to-golang-group
-      shell:
-        "usermod -a -G golang vagrant"
-    - name: change-group-of-golang-directory
-      shell:
-        "chown -R root:golang /opt/go"
-    - name: change-permissions-of-golang-directory
-      shell:
-        "chmod -R ug=rwx,o=rx /opt/go"
-    - name: set-gopath
+    - name: set-goroot
       lineinfile:
         path: /etc/environment
         state: present
-        regexp: '^GOPATH'
-        line: 'GOPATH=/opt/go'
+        regexp: '^GOROOT'
+        line: 'GOROOT=/opt/go'
+    - name: set-gopath
+      become: yes
+      become_user: vagrant
+      lineinfile:
+        path: ~/.zshrc
+        state: present
+        regexp: '^ export GOPATH'
+        line: 'export GOPATH=${HOME}/go'
     - name: update-path-to-include-local-bins
       become: yes
       become_user: vagrant
@@ -217,7 +216,7 @@
         path: ~/.zshrc
         state: present
         regexp: '^export PATH'
-        line: 'export PATH=${HOME}/.local/bin:${HOME}/bin:${GOPATH}/bin:${PATH}'
+        line: 'export PATH=${HOME}/.local/bin:${HOME}/bin:${GOROOT}/bin:${GOPATH}/bin:${PATH}'
     - name: set-lc-all
       become: yes
       become_user: vagrant
